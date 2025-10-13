@@ -96,6 +96,23 @@ namespace BarcodeGenerator.ViewModels
 
         #endregion
 
+        #region Computed Properties
+
+        /// <summary>
+        /// Gets whether a printer is selected
+        /// </summary>
+        public bool HasSelectedPrinter => !string.IsNullOrWhiteSpace(SelectedPrinter);
+
+        /// <summary>
+        /// Called when SelectedPrinter property changes
+        /// </summary>
+        partial void OnSelectedPrinterChanged(string value)
+        {
+            OnPropertyChanged(nameof(HasSelectedPrinter));
+        }
+
+        #endregion
+
         #region Commands
 
         [RelayCommand]
@@ -114,6 +131,99 @@ namespace BarcodeGenerator.ViewModels
         private void RefreshPrinters()
         {
             LoadAvailablePrinters();
+        }
+
+        [RelayCommand]
+        private void TestZplGeneration()
+        {
+            try
+            {
+                var testData = new BarcodeData
+                {
+                    Data = !string.IsNullOrEmpty(BarcodeData) ? BarcodeData : "TEST123",
+                    Description = !string.IsNullOrEmpty(Description) ? Description : "Test Label",
+                    Copies = Copies
+                };
+
+                var testSettings = new LabelSettings
+                {
+                    LabelWidth = LabelWidth,
+                    LabelHeight = LabelHeight,
+                    BarcodeWidth = BarcodeWidth,
+                    BarcodeHeight = BarcodeHeight,
+                    FontSize = 12
+                };
+
+                string zplCommand = ZplCommandGenerator.GenerateLabelZpl(testData, testSettings, 203);
+                
+                StatusMessage = $"ZPL Generated: {zplCommand.Length} characters";
+                
+                // Show in debug output for now
+                System.Diagnostics.Debug.WriteLine("=== Generated ZPL Command ===");
+                System.Diagnostics.Debug.WriteLine(zplCommand);
+                System.Diagnostics.Debug.WriteLine("=============================");
+
+                // Also test ZPL validation
+                var (isValid, validationError) = RawPrinterHelper.ValidateZplCommand(zplCommand);
+                if (isValid)
+                {
+                    StatusMessage += " - ZPL Valid ✓";
+                    System.Diagnostics.Debug.WriteLine("ZPL Command is valid");
+                }
+                else
+                {
+                    StatusMessage += $" - ZPL Invalid: {validationError}";
+                    System.Diagnostics.Debug.WriteLine($"ZPL Validation Failed: {validationError}");
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"ZPL Generation Failed: {ex.Message}";
+                System.Diagnostics.Debug.WriteLine($"ZPL Error: {ex}");
+            }
+        }
+
+        [RelayCommand]
+        private void TestPrinterConnection()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(SelectedPrinter))
+                {
+                    StatusMessage = "No printer selected";
+                    return;
+                }
+
+                StatusMessage = "Testing printer connection...";
+
+                // Test printer info retrieval (this doesn't require actual printing)
+                var (isAvailable, status) = RawPrinterHelper.GetPrinterInfo(SelectedPrinter);
+                
+                if (isAvailable)
+                {
+                    StatusMessage = $"Printer '{SelectedPrinter}' is available ✓";
+                    System.Diagnostics.Debug.WriteLine($"Printer Status: {status}");
+                }
+                else
+                {
+                    StatusMessage = $"Printer '{SelectedPrinter}' not available: {status}";
+                    System.Diagnostics.Debug.WriteLine($"Printer Connection Failed: {status}");
+                }
+
+                // Check if it's a Zebra printer
+                bool isZebra = _printerService.IsZebraPrinter(SelectedPrinter);
+                if (isZebra)
+                {
+                    StatusMessage += " (Zebra Printer)";
+                }
+
+                System.Diagnostics.Debug.WriteLine($"Is Zebra Printer: {isZebra}");
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Printer test failed: {ex.Message}";
+                System.Diagnostics.Debug.WriteLine($"Printer Test Error: {ex}");
+            }
         }
 
         [RelayCommand]
@@ -601,9 +711,16 @@ namespace BarcodeGenerator.ViewModels
         private void ResetSettingsToDefault()
         {
             var defaults = _settingsService.GetDefaultSettings();
-            ApplySettings(defaults);
+            
+            // Only reset size-related properties, keep barcode data and description
+            LabelWidth = defaults.LabelSettings.LabelWidth;
+            LabelHeight = defaults.LabelSettings.LabelHeight;
+            BarcodeWidth = defaults.LabelSettings.BarcodeWidth;
+            BarcodeHeight = defaults.LabelSettings.BarcodeHeight;
+            FontSize = defaults.LabelSettings.FontSize;
+            
             UpdatePreview();
-            StatusMessage = "Settings reset to default";
+            StatusMessage = "Label dimensions reset to default";
         }
 
         private void ClearAllInputs()
@@ -786,11 +903,11 @@ namespace BarcodeGenerator.ViewModels
             
             BarcodeData = barcode.BarcodeText;
             Description = barcode.Description ?? string.Empty;
-            LabelWidth = barcode.LabelWidth;
-            LabelHeight = barcode.LabelHeight;
-            BarcodeWidth = barcode.BarcodeWidth;
-            BarcodeHeight = barcode.BarcodeHeight;
-            Copies = barcode.LabelCount;
+            LabelWidth = barcode.LastLabelWidth ?? LabelWidth;
+            LabelHeight = barcode.LastLabelHeight ?? LabelHeight;
+            BarcodeWidth = barcode.LastBarcodeWidth ?? BarcodeWidth;
+            BarcodeHeight = barcode.LastBarcodeHeight ?? BarcodeHeight;
+            Copies = barcode.DefaultLabelCount;
             
             // Set current record for reprint functionality
             CurrentBarcodeRecord = barcode;

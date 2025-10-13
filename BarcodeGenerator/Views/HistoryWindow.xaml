@@ -181,7 +181,6 @@
                                     MinWidth="150"/>
 
                 <DataGridTextColumn Header="Label Size" 
-                                    Binding="{Binding LabelWidth, StringFormat='{}{0} × {1}'}"
                                     Width="100">
                     <DataGridTextColumn.Binding>
                         <MultiBinding StringFormat="{}{0} × {1}">
@@ -192,7 +191,6 @@
                 </DataGridTextColumn>
 
                 <DataGridTextColumn Header="Barcode Size" 
-                                    Binding="{Binding BarcodeWidth, StringFormat='{}{0} × {1}'}"
                                     Width="100">
                     <DataGridTextColumn.Binding>
                         <MultiBinding StringFormat="{}{0} × {1}">
@@ -203,19 +201,19 @@
                 </DataGridTextColumn>
 
                 <DataGridTextColumn Header="Label Count" 
-                                    Binding="{Binding LabelCount}" 
+                                    Binding="{Binding DefaultLabelCount}" 
                                     Width="80"/>
 
                 <DataGridTextColumn Header="Created" 
-                                    Binding="{Binding CreatedAt, StringFormat='yyyy-MM-dd HH:mm'}" 
+                                    Binding="{Binding CreatedDate, StringFormat='yyyy-MM-dd HH:mm'}" 
                                     Width="130"/>
 
                 <DataGridTextColumn Header="Last Printed" 
-                                    Binding="{Binding LastPrintedAt, StringFormat='yyyy-MM-dd HH:mm'}" 
+                                    Binding="{Binding LastPrintedDate, StringFormat='yyyy-MM-dd HH:mm'}" 
                                     Width="130"/>
 
                 <DataGridTextColumn Header="Print Count" 
-                                    Binding="{Binding PrintCount}" 
+                                    Binding="{Binding TotalPrintCount}" 
                                     Width="80"/>
             </DataGrid.Columns>
 

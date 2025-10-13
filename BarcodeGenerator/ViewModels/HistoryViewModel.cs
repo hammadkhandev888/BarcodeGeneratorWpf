@@ -1,4 +1,4 @@
-using BarcodeGenerator.Data.Models;
+using BarcodeGenerator.Models;
 using BarcodeGenerator.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -57,7 +57,7 @@ public partial class HistoryViewModel : ObservableObject
         
         return barcode.BarcodeText.ToLower().Contains(searchTerm) ||
                (!string.IsNullOrEmpty(barcode.Description) && barcode.Description.ToLower().Contains(searchTerm)) ||
-               barcode.CreatedAt.ToString("yyyy-MM-dd").Contains(searchTerm);
+               barcode.CreatedDate.ToString("yyyy-MM-dd").Contains(searchTerm);
     }
 
     [RelayCommand]
@@ -71,7 +71,7 @@ public partial class HistoryViewModel : ObservableObject
             var barcodes = await _databaseService.GetAllBarcodeRecordsAsync();
             
             AllBarcodes.Clear();
-            foreach (var barcode in barcodes.OrderByDescending(b => b.CreatedAt))
+            foreach (var barcode in barcodes.OrderByDescending(b => b.CreatedDate))
             {
                 AllBarcodes.Add(barcode);
             }
@@ -184,7 +184,3 @@ public partial class HistoryViewModel : ObservableObject
         ReprintSelectedCommand.NotifyCanExecuteChanged();
     }
 }
-
-// Messages for communication with MainViewModel
-public record LoadBarcodeMessage(BarcodeRecord Barcode);
-public record ReprintBarcodeMessage(BarcodeRecord Barcode);

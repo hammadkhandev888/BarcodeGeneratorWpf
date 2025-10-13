@@ -217,6 +217,17 @@
                                    Margin="0,5"
                                    Command="{Binding TestPrintCommand}"/>
                             
+                            <Button Content="Test ZPL" 
+                                   Style="{StaticResource SecondaryButtonStyle}"
+                                   Margin="0,5"
+                                   Command="{Binding TestZplGenerationCommand}"/>
+                            
+                            <Button Content="Test Printer" 
+                                   Style="{StaticResource SecondaryButtonStyle}"
+                                   Margin="0,5"
+                                   Command="{Binding TestPrinterConnectionCommand}"
+                                   IsEnabled="{Binding HasSelectedPrinter}"/>
+                            
                             <Button Content="Clear Data" 
                                    Style="{StaticResource SecondaryButtonStyle}"
                                    Margin="0,5"
@@ -393,13 +404,13 @@
                     
                     <!-- Action Buttons -->
                     <Button Content="📊 View Full History" 
-                           Command="{Binding ViewHistoryCommand}"
+                           Command="{Binding OpenHistoryCommand}"
                            Margin="0,0,0,5"
                            Padding="8,4"
                            HorizontalAlignment="Stretch"/>
                     
                     <Button Content="🔄 Refresh" 
-                           Command="{Binding RefreshHistoryCommand}"
+                           Command="{Binding RefreshHistoryAsyncCommand}"
                            Margin="0,0,0,15"
                            Padding="8,4"
                            HorizontalAlignment="Stretch"/>
@@ -478,7 +489,7 @@
                                       Margin="0,0,0,3"/>
                             <TextBlock FontSize="9" Foreground="DarkGray">
                                 <Run Text="Total barcodes created: "/>
-                                <Run Text="{Binding RecentBarcodes.Count}"/>
+                                <Run Text="{Binding RecentBarcodes.Count, Mode=OneWay}"/>
                             </TextBlock>
                         </StackPanel>
                     </Border>
