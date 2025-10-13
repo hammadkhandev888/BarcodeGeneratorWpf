@@ -79,12 +79,6 @@ namespace BarcodeGenerator.ViewModels
         private BarcodeRecord? _currentBarcodeRecord;
 
         [ObservableProperty]
-        private bool _canSave;
-
-        [ObservableProperty] 
-        private bool _canReprint;
-
-        [ObservableProperty]
         private string? _comment;
 
         #endregion
@@ -250,12 +244,6 @@ namespace BarcodeGenerator.ViewModels
             UpdatePreview();
         }
 
-        [RelayCommand(CanExecute = nameof(CanSave))]
-        private async Task SaveBarcodeAsync()
-        {
-            await ExecuteSaveBarcodeAsync();
-        }
-
         [RelayCommand]
         private async Task LoadBarcode(BarcodeRecord? record)
         {
@@ -267,12 +255,6 @@ namespace BarcodeGenerator.ViewModels
         private async Task ViewHistoryAsync()
         {
             await ExecuteViewHistoryAsync();
-        }
-
-        [RelayCommand(CanExecute = nameof(CanReprint))]
-        private async Task ReprintAsync()
-        {
-            await ExecuteReprintAsync();
         }
 
         [RelayCommand]
@@ -313,7 +295,6 @@ namespace BarcodeGenerator.ViewModels
 
             // Register message handlers
             WeakReferenceMessenger.Default.Register<LoadBarcodeMessage>(this, OnLoadBarcodeMessage);
-            WeakReferenceMessenger.Default.Register<ReprintBarcodeMessage>(this, OnReprintBarcodeMessage);
 
             // Load initial data
             InitializeAsync();
@@ -770,44 +751,9 @@ namespace BarcodeGenerator.ViewModels
         }
 
         /// <summary>
-        /// Saves current barcode to database
-        /// </summary>
-        private async Task ExecuteSaveBarcodeAsync()
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(BarcodeData))
-                {
-                    StatusMessage = "Cannot save: Barcode text is required";
-                    return;
-                }
-
-                var savedRecord = await _databaseService.SaveBarcodeRecordAsync(
-                    BarcodeData,
-                    Description ?? string.Empty,
-                    Copies,
-                    LabelWidth,
-                    LabelHeight,
-                    BarcodeWidth,
-                    BarcodeHeight,
-                    Comment);
-
-                CurrentBarcodeRecord = savedRecord;
-                StatusMessage = $"✅ Barcode saved (ID: {savedRecord.Id})";
-                
-                // Refresh recent barcodes
-                await LoadRecentBarcodesAsync();
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = $"Save failed: {ex.Message}";
-            }
-        }
-
-        /// <summary>
         /// Loads barcode from database record into UI
         /// </summary>
-        private async Task ExecuteLoadBarcodeAsync(BarcodeRecord record)
+        private Task ExecuteLoadBarcodeAsync(BarcodeRecord record)
         {
             try
             {
@@ -828,10 +774,13 @@ namespace BarcodeGenerator.ViewModels
 
                 // Update preview with loaded data
                 UpdatePreview();
+                
+                return Task.CompletedTask;
             }
             catch (Exception ex)
             {
                 StatusMessage = $"Load failed: {ex.Message}";
+                return Task.CompletedTask;
             }
         }
 
@@ -853,24 +802,6 @@ namespace BarcodeGenerator.ViewModels
         }
 
         /// <summary>
-        /// Reprints the currently loaded barcode
-        /// </summary>
-        private async Task ExecuteReprintAsync()
-        {
-            if (CurrentBarcodeRecord == null) return;
-
-            try
-            {
-                // Use the existing print functionality
-                await ExecutePrintAsync();
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = $"Reprint failed: {ex.Message}";
-            }
-        }
-
-        /// <summary>
         /// Property change handler for validation
         /// </summary>
         private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -878,7 +809,6 @@ namespace BarcodeGenerator.ViewModels
             switch (e.PropertyName)
             {
                 case nameof(BarcodeData):
-                    CanSave = !string.IsNullOrWhiteSpace(BarcodeData);
                     // Check if barcode text changed - reset current record if different
                     if (CurrentBarcodeRecord?.BarcodeText != BarcodeData)
                     {
@@ -887,7 +817,7 @@ namespace BarcodeGenerator.ViewModels
                     break;
                     
                 case nameof(CurrentBarcodeRecord):
-                    CanReprint = CurrentBarcodeRecord != null;
+                    // CurrentBarcodeRecord changed
                     break;
             }
         }
@@ -909,20 +839,11 @@ namespace BarcodeGenerator.ViewModels
             BarcodeHeight = barcode.LastBarcodeHeight ?? BarcodeHeight;
             Copies = barcode.DefaultLabelCount;
             
-            // Set current record for reprint functionality
+            // Set current record
             CurrentBarcodeRecord = barcode;
             
             // Trigger preview update
             TriggerPreviewUpdate();
-        }
-
-        private void OnReprintBarcodeMessage(object recipient, ReprintBarcodeMessage message)
-        {
-            // Load the barcode and execute reprint
-            OnLoadBarcodeMessage(recipient, new LoadBarcodeMessage(message.Barcode));
-            
-            // Execute reprint asynchronously
-            _ = Task.Run(async () => await ExecuteReprintAsync());
         }
 
         #endregion
@@ -946,5 +867,4 @@ namespace BarcodeGenerator.ViewModels
 namespace BarcodeGenerator.ViewModels
 {
     public record LoadBarcodeMessage(BarcodeRecord Barcode);
-    public record ReprintBarcodeMessage(BarcodeRecord Barcode);
 }

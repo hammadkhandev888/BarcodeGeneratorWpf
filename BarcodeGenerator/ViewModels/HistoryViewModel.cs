@@ -151,19 +151,6 @@ public partial class HistoryViewModel : ObservableObject
 
     private bool CanDeleteSelected() => SelectedBarcode != null && !IsLoading;
 
-    [RelayCommand(CanExecute = nameof(CanReprintSelected))]
-    private void ReprintSelected()
-    {
-        if (SelectedBarcode != null)
-        {
-            // Send message to MainViewModel to reprint this barcode
-            WeakReferenceMessenger.Default.Send(new ReprintBarcodeMessage(SelectedBarcode));
-            StatusMessage = $"Reprinting barcode: {SelectedBarcode.BarcodeText}";
-        }
-    }
-
-    private bool CanReprintSelected() => SelectedBarcode != null;
-
     [RelayCommand]
     private async Task RefreshAsync()
     {
@@ -181,6 +168,5 @@ public partial class HistoryViewModel : ObservableObject
         // Update command states when selection changes
         LoadSelectedCommand.NotifyCanExecuteChanged();
         DeleteSelectedCommand.NotifyCanExecuteChanged();
-        ReprintSelectedCommand.NotifyCanExecuteChanged();
     }
 }

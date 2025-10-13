@@ -5,10 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:BarcodeGenerator.Converters"
         mc:Ignorable="d"
-        Title="Barcode Generator &amp; Printer" 
-        Height="700" Width="1000" 
-        MinHeight="600" MinWidth="800"
-        WindowStartupLocation="CenterScreen">
+        Title="Barcode Generator" 
+        Height="750" Width="1200" 
+        MinHeight="700" MinWidth="1100"
+        WindowStartupLocation="CenterScreen"
+        WindowState="Maximized">
     
     <Window.Resources>
         <!-- Converters -->
@@ -17,38 +18,43 @@
         
         <!-- Styles -->
         <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontSize" Value="16"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Foreground" Value="#2C3E50"/>
-            <Setter Property="Margin" Value="0,10,0,5"/>
+            <Setter Property="Margin" Value="0,15,0,8"/>
         </Style>
         
         <Style x:Key="InputLabelStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Margin" Value="0,5,5,2"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="0,8,5,4"/>
             <Setter Property="VerticalAlignment" Value="Bottom"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
         
         <Style x:Key="InputTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Padding" Value="8"/>
             <Setter Property="BorderBrush" Value="#BDC3C7"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Height" Value="32"/>
         </Style>
         
         <Style x:Key="PrimaryButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="#3498DB"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Padding" Value="15,8"/>
+            <Setter Property="Padding" Value="20,12"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Cursor" Value="Hand"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="#2980B9"/>
                 </Trigger>
                 <Trigger Property="IsEnabled" Value="False">
                     <Setter Property="Background" Value="#95A5A6"/>
+                    <Setter Property="Cursor" Value="No"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -56,10 +62,12 @@
         <Style x:Key="SecondaryButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="#ECF0F1"/>
             <Setter Property="Foreground" Value="#2C3E50"/>
-            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Padding" Value="15,10"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush" Value="#BDC3C7"/>
-            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Cursor" Value="Hand"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="#D5DBDB"/>
@@ -77,28 +85,28 @@
         
         <!-- Title Bar -->
         <Border Grid.Row="0" Background="#34495E" Padding="15,10">
-            <TextBlock Text="Barcode Generator &amp; Printer" 
+            <TextBlock Text="Barcode Generator" 
                       FontSize="18" FontWeight="Bold" 
                       Foreground="White" 
                       HorizontalAlignment="Left"/>
         </Border>
         
         <!-- Main Content Area -->
-        <Grid Grid.Row="1" Margin="10">
+        <Grid Grid.Row="1" Margin="15">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="350"/>          <!-- Settings Panel -->
-                <ColumnDefinition Width="*"/>            <!-- Preview Panel -->
-                <ColumnDefinition Width="300"/>          <!-- Print Controls Panel -->
-                <ColumnDefinition Width="250"/>          <!-- Recent Barcodes Sidebar -->
+                <ColumnDefinition Width="3*" MinWidth="250"/>          <!-- Settings Panel -->
+                <ColumnDefinition Width="4*" MinWidth="350"/>          <!-- Preview Panel -->
+                <ColumnDefinition Width="2.5*" MinWidth="250"/>        <!-- Print Controls Panel -->
+                <ColumnDefinition Width="2.5*" MinWidth="280"/>        <!-- Recent Barcodes Sidebar -->
             </Grid.ColumnDefinitions>
             
             <!-- Left Panel - Input Controls -->
-            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="5">
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Margin="0,0,10,0">
+                <StackPanel Margin="10">
                     
                     <!-- Barcode Data Section -->
                     <TextBlock Text="Barcode Data" Style="{StaticResource SectionHeaderStyle}"/>
-                    <Border BorderBrush="#E8E8E8" BorderThickness="1" Padding="10" Background="#FAFAFA">
+                    <Border BorderBrush="#E8E8E8" BorderThickness="1" Padding="15" Background="#FAFAFA" CornerRadius="4" Margin="0,0,0,10">
                         <StackPanel>
                             <TextBlock Text="Barcode Text (Max 35 chars):" Style="{StaticResource InputLabelStyle}"/>
                             <TextBox x:Name="BarcodeDataTextBox" 
@@ -119,7 +127,7 @@
                     
                     <!-- Label Size Section -->
                     <TextBlock Text="Label Size (mm)" Style="{StaticResource SectionHeaderStyle}"/>
-                    <Border BorderBrush="#E8E8E8" BorderThickness="1" Padding="10" Background="#FAFAFA">
+                    <Border BorderBrush="#E8E8E8" BorderThickness="1" Padding="15" Background="#FAFAFA" CornerRadius="4" Margin="0,0,0,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -144,16 +152,16 @@
                                     Style="{StaticResource InputTextBoxStyle}"/>
                             
                             <Button Grid.Row="3" Grid.ColumnSpan="3" 
-                                   Content="Reset to Default (100x50mm)" 
+                                   Content="↺ Reset to Default (100x50mm)" 
                                    Style="{StaticResource SecondaryButtonStyle}"
-                                   Margin="0,10,0,0"
+                                   Margin="0,15,0,0"
                                    Command="{Binding ResetToDefaultsCommand}"/>
                         </Grid>
                     </Border>
                     
                     <!-- Barcode Size Section -->
                     <TextBlock Text="Barcode Size (mm)" Style="{StaticResource SectionHeaderStyle}"/>
-                    <Border BorderBrush="#E8E8E8" BorderThickness="1" Padding="10" Background="#FAFAFA">
+                    <Border BorderBrush="#E8E8E8" BorderThickness="1" Padding="15" Background="#FAFAFA" CornerRadius="4" Margin="0,0,0,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -186,49 +194,51 @@
                     
                     <!-- Printer Selection -->
                     <TextBlock Text="Printer Selection" Style="{StaticResource SectionHeaderStyle}"/>
-                    <Border BorderBrush="#E8E8E8" BorderThickness="1" Padding="10" Background="#FAFAFA">
+                    <Border BorderBrush="#E8E8E8" BorderThickness="1" Padding="15" Background="#FAFAFA" CornerRadius="4" Margin="0,0,0,10">
                         <StackPanel>
                             <TextBlock Text="Available Printers:" Style="{StaticResource InputLabelStyle}"/>
                             <ComboBox ItemsSource="{Binding AvailablePrinters}" 
                                      SelectedItem="{Binding SelectedPrinter}"
-                                     Padding="5" 
+                                     Padding="8" 
                                      BorderBrush="#BDC3C7" 
-                                     BorderThickness="1"/>
+                                     BorderThickness="1"
+                                     Height="32"
+                                     FontSize="12"/>
                             
-                            <Button Content="Refresh Printers" 
+                            <Button Content="🔄 Refresh Printers" 
                                    Style="{StaticResource SecondaryButtonStyle}"
-                                   Margin="0,10,0,0"
+                                   Margin="0,15,0,0"
                                    Command="{Binding RefreshPrintersCommand}"/>
                         </StackPanel>
                     </Border>
                     
                     <!-- Print Actions -->
                     <TextBlock Text="Print Actions" Style="{StaticResource SectionHeaderStyle}"/>
-                    <Border BorderBrush="#E8E8E8" BorderThickness="1" Padding="10" Background="#FAFAFA">
+                    <Border BorderBrush="#E8E8E8" BorderThickness="1" Padding="15" Background="#FAFAFA" CornerRadius="4" Margin="0,0,0,10">
                         <StackPanel>
-                            <Button Content="Print Labels" 
+                            <Button Content="🖨️ Print Labels" 
                                    Style="{StaticResource PrimaryButtonStyle}"
-                                   Margin="0,5"
+                                   Margin="0,8"
                                    Command="{Binding PrintLabelsCommand}"
                                    IsEnabled="{Binding IsValidData}"/>
                             
-                            <Button Content="Test Print" 
+                            <Button Content="🧪 Test Print" 
                                    Style="{StaticResource SecondaryButtonStyle}"
                                    Margin="0,5"
                                    Command="{Binding TestPrintCommand}"/>
                             
-                            <Button Content="Test ZPL" 
+                            <Button Content="📄 Test ZPL" 
                                    Style="{StaticResource SecondaryButtonStyle}"
                                    Margin="0,5"
                                    Command="{Binding TestZplGenerationCommand}"/>
                             
-                            <Button Content="Test Printer" 
+                            <Button Content="🔗 Test Printer" 
                                    Style="{StaticResource SecondaryButtonStyle}"
                                    Margin="0,5"
                                    Command="{Binding TestPrinterConnectionCommand}"
                                    IsEnabled="{Binding HasSelectedPrinter}"/>
                             
-                            <Button Content="Clear Data" 
+                            <Button Content="🗑️ Clear Data" 
                                    Style="{StaticResource SecondaryButtonStyle}"
                                    Margin="0,5"
                                    Command="{Binding ClearDataCommand}"/>
@@ -260,13 +270,15 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         
-                        <TextBlock Grid.Column="0" Text="Label Preview" 
-                                  FontSize="14" FontWeight="Bold" 
+                        <TextBlock Grid.Column="0" Text="📋 Label Preview" 
+                                  FontSize="16" FontWeight="Bold" 
+                                  Foreground="#2C3E50"
                                   VerticalAlignment="Center"/>
                         
                         <CheckBox Grid.Column="1" 
-                                 Content="Show Preview" 
+                                 Content="👁️ Show Preview" 
                                  IsChecked="{Binding ShowPreview}"
+                                 FontSize="12"
                                  VerticalAlignment="Center"/>
                     </Grid>
                 </Border>
@@ -281,7 +293,8 @@
                         <ScrollViewer x:Name="PreviewScrollViewer" 
                                      HorizontalScrollBarVisibility="Auto" 
                                      VerticalScrollBarVisibility="Auto"
-                                     Background="#F5F5F5">
+                                     Background="#F5F5F5"
+                                     Visibility="{Binding ShowPreview, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <Image x:Name="PreviewImage" 
                                   Source="{Binding PreviewImage}" 
                                   Stretch="None"
@@ -290,14 +303,16 @@
                                   Margin="20"/>
                         </ScrollViewer>
                         
-                        <!-- Loading Indicator -->
+                        <!-- Loading Indicator (only show when preview is enabled AND generating) -->
                         <StackPanel HorizontalAlignment="Center" 
                                    VerticalAlignment="Center"
-                                   Visibility="{Binding IsPreviewGenerating, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <TextBlock Text="Generating Preview..." 
-                                      FontSize="14" 
-                                      HorizontalAlignment="Center" 
-                                      Margin="5"/>
+                                   Visibility="{Binding ShowPreview, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel Visibility="{Binding IsPreviewGenerating, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <TextBlock Text="Generating Preview..." 
+                                          FontSize="14" 
+                                          HorizontalAlignment="Center" 
+                                          Margin="5"/>
+                            </StackPanel>
                         </StackPanel>
                         
                         <!-- No Preview Message -->
@@ -332,87 +347,79 @@
 
             <!-- Print Controls Panel -->
             <Border Grid.Column="2" 
-                   BorderBrush="LightGray" 
+                   BorderBrush="#E8E8E8" 
                    BorderThickness="1,0,1,0" 
-                   Padding="15"
-                   Background="White">
+                   Padding="20"
+                   Background="#FEFEFE">
                 <StackPanel>
-                    <TextBlock Text="Print Controls" 
+                    <TextBlock Text="🖨️ Print Controls" 
                               FontSize="16" 
                               FontWeight="Bold" 
-                              Margin="0,0,0,15"/>
+                              Foreground="#2C3E50"
+                              Margin="0,0,0,20"/>
 
                     <!-- Printer Selection -->
                     <TextBlock Text="Printer:" Style="{StaticResource InputLabelStyle}"/>
                     <ComboBox ItemsSource="{Binding AvailablePrinters}"
                              SelectedItem="{Binding SelectedPrinter}"
-                             Margin="0,0,0,10"/>
+                             Padding="8" 
+                             BorderBrush="#BDC3C7" 
+                             BorderThickness="1"
+                             Height="32"
+                             FontSize="12"
+                             Margin="0,0,0,15"/>
                     
                     <!-- Label Count -->
                     <TextBlock Text="Copies:" Style="{StaticResource InputLabelStyle}"/>
                     <TextBox Text="{Binding Copies}" 
                             Style="{StaticResource InputTextBoxStyle}"
-                            Margin="0,0,0,15"/>
+                            Margin="0,0,0,20"/>
                     
                     <!-- Action Buttons -->
                     <Button Content="🖨️ Print Labels" 
                            Command="{Binding PrintLabelsCommand}"
                            Style="{StaticResource PrimaryButtonStyle}"
+                           IsEnabled="{Binding IsValidData}"
                            Margin="0,0,0,10"/>
                     
-                    <Button Content="🔧 Test Print" 
+                    <Button Content="🧪 Test Print" 
                            Command="{Binding TestPrintCommand}"
-                           Background="Orange"
-                           Foreground="White"
-                           Padding="10,6"
-                           BorderThickness="0"
-                           Margin="0,0,0,20"/>
-                    
-                    <!-- Save Barcode -->
-                    <Button Content="💾 Save Barcode" 
-                           Command="{Binding SaveBarcodeCommand}"
-                           IsEnabled="{Binding CanSave}"
-                           Background="Green"
-                           Foreground="White"
-                           Padding="10,6"
-                           BorderThickness="0"
-                           Margin="0,0,0,10"
-                           ToolTip="Save current barcode settings to database"/>
+                           Style="{StaticResource SecondaryButtonStyle}"
+                           Margin="0,0,0,10"/>
                     
                     <!-- Refresh Printers -->
                     <Button Content="🔄 Refresh Printers" 
                            Command="{Binding RefreshPrintersCommand}"
-                           Background="Gray"
-                           Foreground="White"
-                           Padding="10,6"
-                           BorderThickness="0"/>
+                           Style="{StaticResource SecondaryButtonStyle}"
+                           Margin="0,0,0,10"/>
                 </StackPanel>
             </Border>
 
             <!-- Recent Barcodes Sidebar -->
             <Border Grid.Column="3" 
-                   BorderBrush="LightGray" 
+                   BorderBrush="#E8E8E8" 
                    BorderThickness="1,0,0,0" 
-                   Padding="10"
-                   Background="#F8F8F8">
+                   Padding="15"
+                   Background="#F9F9F9">
                 <StackPanel>
                     <!-- Header -->
-                    <TextBlock Text="Recent Barcodes" 
+                    <TextBlock Text="📈 Recent Barcodes" 
                               FontSize="16" 
                               FontWeight="Bold" 
-                              Margin="0,0,0,10"/>
+                              Foreground="#2C3E50"
+                              Margin="0,0,0,15"/>
                     
                     <!-- Action Buttons -->
                     <Button Content="📊 View Full History" 
                            Command="{Binding OpenHistoryCommand}"
-                           Margin="0,0,0,5"
-                           Padding="8,4"
+                           Style="{StaticResource SecondaryButtonStyle}"
+                           Margin="0,0,0,8"
                            HorizontalAlignment="Stretch"/>
                     
                     <Button Content="🔄 Refresh" 
                            Command="{Binding RefreshHistoryAsyncCommand}"
-                           Margin="0,0,0,15"
-                           Padding="8,4"
+                           Style="{StaticResource SecondaryButtonStyle}"
+                           Margin="0,0,0,20"
                            HorizontalAlignment="Stretch"/>
                     
                     <!-- Recent Barcodes List -->
@@ -459,37 +466,31 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
                     
-                    <!-- Load/Reprint Buttons -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="0,0,0,10">
-                        <Button Content="📥 Load"
-                               Command="{Binding LoadBarcodeCommand}"
-                               CommandParameter="{Binding CurrentBarcodeRecord}"
-                               Width="100"
-                               Margin="0,0,5,0"
-                               ToolTip="Load selected barcode with all settings"/>
-                        
-                        <Button Content="🖨️ Reprint"
-                               Command="{Binding ReprintCommand}"
-                               Width="135"
-                               IsEnabled="{Binding CanReprint}"
-                               ToolTip="Reprint selected barcode"/>
-                    </StackPanel>
+                    <!-- Load Button -->
+                    <Button Content="📥 Load"
+                           Command="{Binding LoadBarcodeCommand}"
+                           CommandParameter="{Binding CurrentBarcodeRecord}"
+                           Style="{StaticResource SecondaryButtonStyle}"
+                           Margin="0,0,0,15"
+                           HorizontalAlignment="Stretch"
+                           ToolTip="Load selected barcode with all settings"/>
                     
                     <!-- Statistics -->
-                    <Border Background="LightYellow" 
-                           BorderBrush="Orange"
+                    <Border Background="#EBF5FB" 
+                           BorderBrush="#3498DB"
                            BorderThickness="1"
-                           Padding="5"
-                           CornerRadius="3"
-                           Margin="0,10,0,0">
+                           Padding="10"
+                           CornerRadius="4"
+                           Margin="0,0,0,0">
                         <StackPanel>
-                            <TextBlock Text="Quick Stats" 
-                                      FontSize="10"
+                            <TextBlock Text="📊 Quick Stats" 
+                                      FontSize="12"
                                       FontWeight="Bold"
-                                      Margin="0,0,0,3"/>
-                            <TextBlock FontSize="9" Foreground="DarkGray">
-                                <Run Text="Total barcodes created: "/>
-                                <Run Text="{Binding RecentBarcodes.Count, Mode=OneWay}"/>
+                                      Foreground="#2C3E50"
+                                      Margin="0,0,0,5"/>
+                            <TextBlock FontSize="11" Foreground="#34495E">
+                                <Run Text="Total barcodes: "/>
+                                <Run Text="{Binding RecentBarcodes.Count, Mode=OneWay}" FontWeight="Bold"/>
                             </TextBlock>
                         </StackPanel>
                     </Border>
@@ -498,7 +499,7 @@
         </Grid>
         
         <!-- Status Bar -->
-        <Border Grid.Row="2" Background="#ECF0F1" BorderBrush="#BDC3C7" BorderThickness="0,1,0,0" Padding="10,5">
+        <Border Grid.Row="2" Background="#34495E" BorderBrush="#2C3E50" BorderThickness="0,1,0,0" Padding="15,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -507,22 +508,25 @@
                 
                 <TextBlock Grid.Column="0" 
                           Text="{Binding StatusMessage}" 
-                          FontSize="11" 
+                          FontSize="12" 
+                          Foreground="White"
                           VerticalAlignment="Center"/>
                 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <TextBlock Text="{Binding SelectedPrinter, StringFormat='Printer: {0}'}" 
-                              FontSize="11" 
+                    <TextBlock Text="{Binding SelectedPrinter, StringFormat='🖨️ {0}'}" 
+                              FontSize="12" 
+                              Foreground="White"
                               VerticalAlignment="Center"
-                              Margin="0,0,20,0"/>
+                              Margin="0,0,25,0"/>
                     
-                    <Rectangle Width="10" Height="10" 
+                    <Ellipse Width="12" Height="12" 
                               Fill="{Binding IsValidData, Converter={x:Static converters:BooleanToBrushConverter.Default}}"
                               VerticalAlignment="Center"
-                              Margin="0,0,5,0"/>
+                              Margin="0,0,8,0"/>
                     
                     <TextBlock Text="{Binding IsValidData, Converter={x:Static converters:BooleanToStatusConverter.Default}}" 
-                              FontSize="11" 
+                              FontSize="12" 
+                              Foreground="White"
                               VerticalAlignment="Center"/>
                 </StackPanel>
             </Grid>
