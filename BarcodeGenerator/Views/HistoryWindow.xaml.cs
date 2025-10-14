@@ -12,10 +12,10 @@ public partial class HistoryWindow : Window
         InitializeViewModel();
     }
 
-    public HistoryWindow(DatabaseService databaseService) : this()
+    public HistoryWindow(DatabaseService databaseService, MainViewModel? mainViewModel) : this()
     {
         // Override the default DataContext with properly injected dependencies
-        DataContext = new HistoryViewModel(databaseService);
+        DataContext = new HistoryViewModel(databaseService, mainViewModel);
     }
 
     private void InitializeViewModel()
@@ -24,6 +24,7 @@ public partial class HistoryWindow : Window
         if (DataContext is not HistoryViewModel)
         {
             var databaseService = new DatabaseService();
+
             DataContext = new HistoryViewModel(databaseService);
         }
     }

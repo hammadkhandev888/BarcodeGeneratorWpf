@@ -32,7 +32,8 @@ public partial class MainWindow : Window
             var databaseService = new DatabaseService();
 
             // Create and set view model
-            _viewModel = new MainViewModel(barcodeGenerator, printerService, settingsService, databaseService);
+            // Pass 'null' for mainViewModel parameter if this is the root/main instance
+            _viewModel = new MainViewModel(barcodeGenerator, printerService, settingsService, databaseService, null);
             DataContext = _viewModel;
         }
         catch (Exception ex)

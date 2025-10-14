@@ -12,6 +12,7 @@ namespace BarcodeGenerator.ViewModels;
 public partial class HistoryViewModel : ObservableObject
 {
     private readonly DatabaseService _databaseService;
+    private readonly MainViewModel? _mainViewModel;  
     private readonly ICollectionView _filteredView;
 
     [ObservableProperty]
@@ -33,14 +34,28 @@ public partial class HistoryViewModel : ObservableObject
 
     public ICollectionView FilteredBarcodes => _filteredView;
 
-    public HistoryViewModel(DatabaseService databaseService)
+    public HistoryViewModel(DatabaseService databaseService, MainViewModel mainViewModel)
     {
+        _mainViewModel = mainViewModel;
         _databaseService = databaseService;
         
         // Create filtered view for search functionality
         _filteredView = CollectionViewSource.GetDefaultView(AllBarcodes);
         _filteredView.Filter = FilterBarcodes;
         
+        // Load data on initialization
+        _ = LoadBarcodesAsync();
+    }
+
+    public HistoryViewModel(DatabaseService databaseService)
+    {
+        _mainViewModel = null;
+        _databaseService = databaseService;
+
+        // Create filtered view for search functionality
+        _filteredView = CollectionViewSource.GetDefaultView(AllBarcodes);
+        _filteredView.Filter = FilterBarcodes;
+
         // Load data on initialization
         _ = LoadBarcodesAsync();
     }
@@ -130,14 +145,17 @@ public partial class HistoryViewModel : ObservableObject
             IsLoading = true;
             StatusMessage = "Deleting barcode...";
 
-            await _databaseService.DeleteBarcodeRecordAsync(SelectedBarcode.Id);
+            var deletedId = SelectedBarcode.Id;
+            await _databaseService.DeleteBarcodeRecordAsync(deletedId);
             AllBarcodes.Remove(SelectedBarcode);
-            
             TotalCount = AllBarcodes.Count;
             StatusMessage = $"Deleted barcode. {TotalCount} remaining.";
             
             SelectedBarcode = null;
             _filteredView.Refresh();
+
+            // Notify other ViewModels (MainViewModel) that a barcode was deleted so they can refresh their lists
+            WeakReferenceMessenger.Default.Send(new BarcodeDeletedMessage(deletedId));
         }
         catch (Exception ex)
         {

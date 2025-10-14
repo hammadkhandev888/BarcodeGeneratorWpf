@@ -71,7 +71,7 @@ namespace BarcodeGenerator.Services
         /// <param name="barcodeWidth">Barcode width in pixels</param>
         /// <param name="barcodeHeight">Barcode height in pixels</param>
         /// <returns>Complete label image with barcode and text</returns>
-        public Image GenerateCode128BarcodeWithLabel(string data, string description, int barcodeWidth, int barcodeHeight)
+        public Image GenerateCode128BarcodeWithLabel(string data, string description, int barcodeWidth, int barcodeHeight, int descriptionFontSize = 18)
         {
             try
             {
@@ -97,7 +97,7 @@ namespace BarcodeGenerator.Services
                     // Draw description text if provided
                     if (!string.IsNullOrEmpty(description))
                     {
-                        using (var font = new Font("Arial", 12, FontStyle.Regular))
+                        using (var font = new Font("Arial", descriptionFontSize, FontStyle.Regular))
                         {
                             var textSize = graphics.MeasureString(description, font);
                             float textX = (totalWidth - textSize.Width) / 2;
@@ -216,15 +216,37 @@ namespace BarcodeGenerator.Services
             double labelWidthMm, 
             double labelHeightMm, 
             double barcodeWidthMm, 
-            double barcodeHeightMm, 
+            double barcodeHeightMm,
+            int labelFontSize = 15,
+            int descriptionFontSize = 18,
+            BarcodeGenerator.Models.LabelTextAlignment labelAlignment = BarcodeGenerator.Models.LabelTextAlignment.Center,
+            BarcodeGenerator.Models.LabelTextAlignment descriptionAlignment = BarcodeGenerator.Models.LabelTextAlignment.Center,
             int dpi = 96)
         {
             try
             {
-                // Convert mm to pixels
-                int labelWidthPx = ConvertMmToPixels(labelWidthMm, dpi);
+                // Calculate dynamic dimensions based on barcode value length
+                double adjustedLabelWidthMm = labelWidthMm;
+                double adjustedBarcodeWidthMm = barcodeWidthMm;
+                
+                // If barcode value is longer than 16 characters, expand dimensions to prevent blurring
+                if (barcodeValue.Length > 16)
+                {
+                    // Calculate expansion factor based on character count
+                    double expansionFactor = Math.Min(2.0, 1.0 + (barcodeValue.Length - 16) * 0.05);
+                    
+                    // Expand barcode width
+                    adjustedBarcodeWidthMm = barcodeWidthMm * expansionFactor;
+                    
+                    // Expand label width to accommodate the wider barcode (with margins)
+                    double minLabelWidth = adjustedBarcodeWidthMm + 20; // 20mm for margins
+                    adjustedLabelWidthMm = Math.Max(labelWidthMm, minLabelWidth);
+                }
+
+                // Convert mm to pixels using adjusted dimensions
+                int labelWidthPx = ConvertMmToPixels(adjustedLabelWidthMm, dpi);
                 int labelHeightPx = ConvertMmToPixels(labelHeightMm, dpi);
-                int barcodeWidthPx = ConvertMmToPixels(barcodeWidthMm, dpi);
+                int barcodeWidthPx = ConvertMmToPixels(adjustedBarcodeWidthMm, dpi);
                 int barcodeHeightPx = ConvertMmToPixels(barcodeHeightMm, dpi);
 
                 // Generate barcode (only encoding the value, no visible text)
@@ -238,45 +260,30 @@ namespace BarcodeGenerator.Services
                     graphics.Clear(Color.White);
                     graphics.DrawRectangle(Pens.LightGray, 0, 0, labelWidthPx - 1, labelHeightPx - 1);
 
-                    // Center barcode on label
+                    // Calculate dynamic positioning based on content
+                    bool hasText = !string.IsNullOrEmpty(labelText) || !string.IsNullOrEmpty(description);
+                    
+                    // Center barcode on label with appropriate margins
                     int barcodeX = (labelWidthPx - barcodeImage.Width) / 2;
-                    int barcodeY = 20; // Top margin
+                    int topMargin = hasText ? 15 : Math.Max(15, (labelHeightPx - barcodeImage.Height) / 2);
+                    int barcodeY = Math.Max(10, Math.Min(topMargin, labelHeightPx - barcodeImage.Height - (hasText ? 25 : 10)));
 
                     graphics.DrawImage(barcodeImage, barcodeX, barcodeY);
 
                     float currentY = barcodeY + barcodeImage.Height + 10;
 
-                    // Draw label text below barcode (if provided) - smaller size
+                    // Draw label text below barcode (if provided)
                     if (!string.IsNullOrEmpty(labelText))
                     {
-                        using (var labelFont = new Font("Arial", 10, FontStyle.Bold))
-                        {
-                            var labelSize = graphics.MeasureString(labelText, labelFont);
-                            float labelX = (labelWidthPx - labelSize.Width) / 2;
-
-                            // Ensure text fits on label
-                            if (currentY + labelSize.Height <= labelHeightPx - 10)
-                            {
-                                graphics.DrawString(labelText, labelFont, Brushes.Black, labelX, currentY);
-                                currentY += labelSize.Height + 5; // Update position for next text
-                            }
-                        }
+                        currentY = DrawTextWithAutoResize(graphics, labelText, labelFontSize, true, 
+                            labelWidthPx, labelHeightPx, labelAlignment, currentY, 10);
                     }
 
-                    // Draw description text below label text (if provided) - same size as previous label
+                    // Draw description text below label text (if provided)
                     if (!string.IsNullOrEmpty(description))
                     {
-                        using (var descFont = new Font("Arial", 12, FontStyle.Regular))
-                        {
-                            var descSize = graphics.MeasureString(description, descFont);
-                            float descX = (labelWidthPx - descSize.Width) / 2;
-
-                            // Ensure text fits on label
-                            if (currentY + descSize.Height <= labelHeightPx - 10)
-                            {
-                                graphics.DrawString(description, descFont, Brushes.Black, descX, currentY);
-                            }
-                        }
+                        currentY = DrawTextWithAutoResize(graphics, description, descriptionFontSize, false, 
+                            labelWidthPx, labelHeightPx, descriptionAlignment, currentY, 10);
                     }
                 }
 
@@ -325,6 +332,141 @@ namespace BarcodeGenerator.Services
                 }
             }
             return errorBitmap;
+        }
+
+        /// <summary>
+        /// Draws text with automatic font size reduction and wrapping if needed
+        /// </summary>
+        private float DrawTextWithAutoResize(Graphics graphics, string text, int originalFontSize, bool isBold, 
+            float containerWidth, float containerHeight, BarcodeGenerator.Models.LabelTextAlignment alignment, 
+            float startY, float bottomMargin)
+        {
+            if (string.IsNullOrEmpty(text)) return startY;
+
+            float availableHeight = containerHeight - startY - bottomMargin;
+            if (availableHeight <= 0) return startY;
+
+            int fontSize = originalFontSize;
+            FontStyle fontStyle = isBold ? FontStyle.Bold : FontStyle.Regular;
+            
+            // Try progressively smaller font sizes until text fits
+            for (int attempts = 0; attempts < 5 && fontSize >= 6; attempts++)
+            {
+                using (var font = new Font("Arial", fontSize, fontStyle))
+                {
+                    var textSize = graphics.MeasureString(text, font);
+                    
+                    // Check if text fits in available space
+                    if (textSize.Height <= availableHeight)
+                    {
+                        // Check if text width fits, if not try word wrapping
+                        if (textSize.Width <= containerWidth - 20) // 20px total margin
+                        {
+                            // Text fits, draw it
+                            float textX = CalculateTextX(containerWidth, textSize.Width, alignment);
+                            graphics.DrawString(text, font, Brushes.Black, textX, startY);
+                            return startY + textSize.Height + 5;
+                        }
+                        else
+                        {
+                            // Try word wrapping
+                            var wrappedLines = WrapText(graphics, text, font, containerWidth - 20);
+                            float totalTextHeight = wrappedLines.Count * textSize.Height;
+                            
+                            if (totalTextHeight <= availableHeight)
+                            {
+                                // Draw wrapped text
+                                float currentY = startY;
+                                foreach (string line in wrappedLines)
+                                {
+                                    var lineSize = graphics.MeasureString(line, font);
+                                    float lineX = CalculateTextX(containerWidth, lineSize.Width, alignment);
+                                    graphics.DrawString(line, font, Brushes.Black, lineX, currentY);
+                                    currentY += lineSize.Height;
+                                }
+                                return currentY + 5;
+                            }
+                        }
+                    }
+                }
+                
+                // Reduce font size and try again
+                fontSize = Math.Max(6, fontSize - 2);
+            }
+            
+            // If we get here, draw with minimum font size anyway (truncated if necessary)
+            using (var font = new Font("Arial", 6, fontStyle))
+            {
+                var textSize = graphics.MeasureString(text, font);
+                
+                // Try to fit at least one line
+                if (textSize.Height <= availableHeight)
+                {
+                    // Truncate text if too long
+                    string displayText = text;
+                    while (graphics.MeasureString(displayText + "...", font).Width > containerWidth - 20 && displayText.Length > 1)
+                    {
+                        displayText = displayText.Substring(0, displayText.Length - 1);
+                    }
+                    if (displayText.Length < text.Length)
+                        displayText += "...";
+                    
+                    var finalSize = graphics.MeasureString(displayText, font);
+                    float textX = CalculateTextX(containerWidth, finalSize.Width, alignment);
+                    graphics.DrawString(displayText, font, Brushes.Black, textX, startY);
+                    return startY + finalSize.Height + 5;
+                }
+            }
+            
+            return startY; // No space available
+        }
+
+        /// <summary>
+        /// Wraps text into multiple lines to fit within specified width
+        /// </summary>
+        private List<string> WrapText(Graphics graphics, string text, Font font, float maxWidth)
+        {
+            var lines = new List<string>();
+            var words = text.Split(' ');
+            
+            if (words.Length == 0) return lines;
+            
+            string currentLine = words[0];
+            
+            for (int i = 1; i < words.Length; i++)
+            {
+                string testLine = currentLine + " " + words[i];
+                var testSize = graphics.MeasureString(testLine, font);
+                
+                if (testSize.Width <= maxWidth)
+                {
+                    currentLine = testLine;
+                }
+                else
+                {
+                    lines.Add(currentLine);
+                    currentLine = words[i];
+                }
+            }
+            
+            if (!string.IsNullOrEmpty(currentLine))
+                lines.Add(currentLine);
+            
+            return lines;
+        }
+
+        /// <summary>
+        /// Calculates the X position for text based on alignment
+        /// </summary>
+        private float CalculateTextX(float containerWidth, float textWidth, BarcodeGenerator.Models.LabelTextAlignment alignment)
+        {
+            return alignment switch
+            {
+                BarcodeGenerator.Models.LabelTextAlignment.Left => 10f, // Small left margin
+                BarcodeGenerator.Models.LabelTextAlignment.Right => containerWidth - textWidth - 10f, // Small right margin
+                BarcodeGenerator.Models.LabelTextAlignment.Center => (containerWidth - textWidth) / 2f,
+                _ => (containerWidth - textWidth) / 2f // Default to center
+            };
         }
 
         /// <summary>

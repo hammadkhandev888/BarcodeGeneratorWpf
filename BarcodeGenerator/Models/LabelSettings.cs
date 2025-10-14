@@ -4,12 +4,22 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace BarcodeGenerator.Models
 {
     /// <summary>
+    /// Text alignment options for labels
+    /// </summary>
+    public enum LabelTextAlignment
+    {
+        Left,
+        Center,
+        Right
+    }
+
+    /// <summary>
     /// UI-only model representing label dimensions and barcode size settings (NOT a database entity)
     /// </summary>
     public partial class LabelSettings : ObservableObject
     {
         private double _labelWidth = 100.0; // Default 100mm
-        private double _labelHeight = 50.0; // Default 50mm
+        private double _labelHeight = 60.0; // Default 60mm
         private double _barcodeWidth = 80.0; // Default 80mm
         private double _barcodeHeight = 20.0; // Default 20mm
 
@@ -73,11 +83,38 @@ namespace BarcodeGenerator.Models
         /// </summary>
         public double TextSpacing { get; set; } = 3.0;
 
+        private int _descriptionFontSize = 18;
+        private int _labelFontSize = 15;
+
         /// <summary>
         /// Font size for description text
         /// </summary>
-        [Range(6, 24, ErrorMessage = "Font size must be between 6 and 24")]
-        public int FontSize { get; set; } = 12;
+        [Range(1, 32, ErrorMessage = "Description font size must be between 1 and 32")]
+        public int DescriptionFontSize 
+        { 
+            get => _descriptionFontSize;
+            set => _descriptionFontSize = Math.Max(1, Math.Min(32, value));
+        }
+
+        /// <summary>
+        /// Font size for label text displayed below barcode
+        /// </summary>
+        [Range(1, 24, ErrorMessage = "Label font size must be between 1 and 24")]
+        public int LabelFontSize 
+        { 
+            get => _labelFontSize;
+            set => _labelFontSize = Math.Max(1, Math.Min(24, value));
+        }
+
+        /// <summary>
+        /// Text alignment for label text (Center by default)
+        /// </summary>
+        public LabelTextAlignment LabelTextAlignment { get; set; } = LabelTextAlignment.Center;
+
+        /// <summary>
+        /// Text alignment for description text (Center by default)
+        /// </summary>
+        public LabelTextAlignment DescriptionTextAlignment { get; set; } = LabelTextAlignment.Center;
 
         /// <summary>
         /// Validates if the barcode fits within the label dimensions
@@ -90,7 +127,10 @@ namespace BarcodeGenerator.Models
                 return false;
 
             // Check if barcode and text fit within label height
-            double requiredHeight = TopMargin + BarcodeHeight + TextSpacing + FontSize + BottomMargin;
+            // More realistic calculation considering text can be auto-resized
+            // Reserve minimum space for text (at least 2 lines of 6pt font = ~8mm)
+            double minTextSpaceMm = 8.0;
+            double requiredHeight = TopMargin + BarcodeHeight + TextSpacing + minTextSpaceMm + BottomMargin;
             if (requiredHeight > LabelHeight)
                 return false;
 
@@ -106,7 +146,8 @@ namespace BarcodeGenerator.Models
             if (BarcodeWidth + (2 * HorizontalMargin) > LabelWidth)
                 return "Barcode width exceeds label width";
 
-            double requiredHeight = TopMargin + BarcodeHeight + TextSpacing + FontSize + BottomMargin;
+            double minTextSpaceMm = 8.0;
+            double requiredHeight = TopMargin + BarcodeHeight + TextSpacing + minTextSpaceMm + BottomMargin;
             if (requiredHeight > LabelHeight)
                 return "Content exceeds label height";
 
@@ -129,7 +170,10 @@ namespace BarcodeGenerator.Models
                 BottomMargin = this.BottomMargin,
                 HorizontalMargin = this.HorizontalMargin,
                 TextSpacing = this.TextSpacing,
-                FontSize = this.FontSize
+                DescriptionFontSize = this.DescriptionFontSize,
+                LabelFontSize = this.LabelFontSize,
+                LabelTextAlignment = this.LabelTextAlignment,
+                DescriptionTextAlignment = this.DescriptionTextAlignment
             };
         }
     }

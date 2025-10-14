@@ -163,7 +163,7 @@
                                     Style="{StaticResource InputTextBoxStyle}"/>
                             
                             <Button Grid.Row="3" Grid.ColumnSpan="3" 
-                                   Content="↺ Reset to Default (100x50mm)" 
+                                   Content="↺ Reset to Default (100x60mm)" 
                                    Style="{StaticResource SecondaryButtonStyle}"
                                    Margin="0,15,0,0"
                                    Command="{Binding ResetToDefaultsCommand}"/>
@@ -184,6 +184,8 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Width:" Style="{StaticResource InputLabelStyle}"/>
@@ -196,9 +198,14 @@
                                     Text="{Binding BarcodeHeight, UpdateSourceTrigger=PropertyChanged}" 
                                     Style="{StaticResource InputTextBoxStyle}"/>
                             
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Font Size:" Style="{StaticResource InputLabelStyle}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Label Font Size:" Style="{StaticResource InputLabelStyle}"/>
                             <TextBox Grid.Row="3" Grid.Column="0" 
-                                    Text="{Binding FontSize, UpdateSourceTrigger=PropertyChanged}" 
+                                    Text="{Binding LabelFontSize, UpdateSourceTrigger=PropertyChanged}" 
+                                    Style="{StaticResource InputTextBoxStyle}"/>
+                            
+                            <TextBlock Grid.Row="2" Grid.Column="2" Text="Description Font Size:" Style="{StaticResource InputLabelStyle}"/>
+                            <TextBox Grid.Row="3" Grid.Column="2" 
+                                    Text="{Binding DescriptionFontSize, UpdateSourceTrigger=PropertyChanged}" 
                                     Style="{StaticResource InputTextBoxStyle}"/>
                         </Grid>
                     </Border>
@@ -380,24 +387,39 @@
                              BorderThickness="1"
                              Height="32"
                              FontSize="12"
-                             Margin="0,0,0,20"
+                             Margin="0,0,0,10"
                              ToolTip="Select the printer for label output"/>
-                    
+                    <!-- Refresh Printers -->
+                    <Button Content="🔄" 
+          Command="{Binding RefreshPrintersCommand}"
+          Style="{StaticResource SecondaryButtonStyle}"
+          Margin="200,0,0,20"
+                        MaxHeight="70"
+                            MaxWidth="70"/>
                     <!-- Action Buttons -->
-                    <Button Content="🖨️ Print Labels" 
-                           Command="{Binding PrintLabelsCommand}"
-                           Style="{StaticResource PrimaryButtonStyle}"
-                           IsEnabled="{Binding IsValidData}"
-                           Margin="0,0,0,10"
-                           ToolTip="Print the configured labels"/>
+              <Button Content="🖨️ Print Labels" 
+                  Command="{Binding PrintLabelsCommand}"
+                  Style="{StaticResource PrimaryButtonStyle}"
+                  IsEnabled="{Binding IsValidData}"
+                  Margin="0,0,0,10"
+                  ToolTip="Print the configured labels"/>
+
+              <Button Content="💾 Save Record"
+                  Command="{Binding SaveRecordCommand}"
+                  Style="{StaticResource SecondaryButtonStyle}"
+                  Margin="0,0,0,10"
+                  IsEnabled="{Binding IsValidData}"
+                  ToolTip="Save current barcode record to recent list and clear inputs"/>
                     
+                            <Button Content="📄 Save PDF"
+                                            Command="{Binding SavePdfCommand}"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            Margin="0,0,0,10"
+                                            IsEnabled="{Binding IsValidData}"
+                                            ToolTip="Save barcode as a PDF (choose location) and save record to database"/>
                   
                     
-                    <!-- Refresh Printers -->
-                    <Button Content="🔄 Refresh Printers" 
-                           Command="{Binding RefreshPrintersCommand}"
-                           Style="{StaticResource SecondaryButtonStyle}"
-                           Margin="0,0,0,10"/>
+                 
                 </StackPanel>
             </Border>
 

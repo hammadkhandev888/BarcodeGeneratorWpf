@@ -22,6 +22,7 @@ namespace BarcodeGenerator.ViewModels
         private readonly PrinterService _printerService;
         private readonly SettingsService _settingsService;
         private readonly DatabaseService _databaseService;
+        private readonly MainViewModel? _mainViewModel;  
         private readonly DispatcherTimer _previewUpdateTimer;
 
         #region Observable Properties
@@ -42,7 +43,7 @@ namespace BarcodeGenerator.ViewModels
         private double _labelWidth = 100.0;
 
         [ObservableProperty]
-        private double _labelHeight = 50.0;
+        private double _labelHeight = 60.0;
 
         [ObservableProperty]
         private double _barcodeWidth = 80.0;
@@ -50,8 +51,38 @@ namespace BarcodeGenerator.ViewModels
         [ObservableProperty]
         private double _barcodeHeight = 20.0;
 
-        [ObservableProperty]
-        private int _fontSize = 12;
+        private int _descriptionFontSize = 18;
+        private int _labelFontSize = 15;
+
+        /// <summary>
+        /// Font size for description text
+        /// </summary>
+        public int DescriptionFontSize
+        {
+            get => _descriptionFontSize;
+            set
+            {
+                if (SetProperty(ref _descriptionFontSize, Math.Max(1, Math.Min(32, value))))
+                {
+                    TriggerPreviewUpdate();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Font size for label text
+        /// </summary>
+        public int LabelFontSize
+        {
+            get => _labelFontSize;
+            set
+            {
+                if (SetProperty(ref _labelFontSize, Math.Max(1, Math.Min(24, value))))
+                {
+                    TriggerPreviewUpdate();
+                }
+            }
+        }
 
         [ObservableProperty]
         private BitmapSource? _previewImage;
@@ -139,7 +170,8 @@ namespace BarcodeGenerator.ViewModels
                     LabelHeight = LabelHeight,
                     BarcodeWidth = BarcodeWidth,
                     BarcodeHeight = BarcodeHeight,
-                    FontSize = 12
+                    DescriptionFontSize = 18,
+                    LabelFontSize = 15
                 };
 
                 string zplCommand = ZplCommandGenerator.GenerateLabelZpl(testData, testSettings, 203);
@@ -226,6 +258,154 @@ namespace BarcodeGenerator.ViewModels
             await SaveCurrentSettingsAsync();
         }
 
+    [RelayCommand]
+    private async Task SaveRecordAsync()
+        {
+            try
+            {
+                StatusMessage = "Saving record...";
+
+                var saved = await _databaseService.SaveBarcodeRecordAsync(
+                    BarcodeData,
+                    BarcodeValue,
+                    Description ?? string.Empty,
+                    Copies,
+                    LabelWidth,
+                    LabelHeight,
+                    BarcodeWidth,
+                    BarcodeHeight,
+                    Comment);
+
+                // Insert saved record into RecentBarcodes (ensure no duplicate)
+                var existing = RecentBarcodes.FirstOrDefault(r => r.Id == saved.Id);
+                if (existing != null)
+                    RecentBarcodes.Remove(existing);
+
+                RecentBarcodes.Insert(0, saved);
+
+                // Keep a reasonable limit (10)
+                while (RecentBarcodes.Count > 10)
+                    RecentBarcodes.RemoveAt(RecentBarcodes.Count - 1);
+
+                // Clear inputs as requested
+                ClearAllInputs();
+
+                StatusMessage = $"Saved: {saved.BarcodeText}";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error saving record: {ex.Message}";
+            }
+        }
+
+    [RelayCommand]
+    private async Task SavePdfAsync()
+        {
+            try
+            {
+                StatusMessage = "Saving PDF...";
+
+                // Use WPF SaveFileDialog to get path from user
+                var dlg = new Microsoft.Win32.SaveFileDialog()
+                {
+                    Filter = "PDF Files (*.pdf)|*.pdf",
+                    DefaultExt = "pdf",
+                    FileName = string.IsNullOrWhiteSpace(BarcodeValue) ? "barcode" : BarcodeValue,
+                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+                };
+
+                bool? result = dlg.ShowDialog();
+                if (result != true || string.IsNullOrEmpty(dlg.FileName))
+                {
+                    StatusMessage = "PDF save canceled";
+                    return;
+                }
+
+                // Generate the label image at printer DPI for better print quality
+                using (var labelImage = _barcodeGenerator.GeneratePreviewImage(
+                    BarcodeValue,
+                    BarcodeData,
+                    Description,
+                    LabelWidth,
+                    LabelHeight,
+                    BarcodeWidth,
+                    BarcodeHeight,
+                    LabelFontSize,
+                    DescriptionFontSize,
+                    BarcodeGenerator.Models.LabelTextAlignment.Center,
+                    BarcodeGenerator.Models.LabelTextAlignment.Center,
+                    dpi: 203))
+                {
+                    // Convert image to PNG bytes
+                    byte[] pngBytes;
+                    using (var ms = new System.IO.MemoryStream())
+                    {
+                        labelImage.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                        pngBytes = ms.ToArray();
+                    }
+
+                    // Create a PDF with the PNG image using PdfSharpCore
+                    try
+                    {
+                        // Lazy load PdfSharpCore types to avoid compile-time issues if package not referenced
+                        using (var pdfStream = System.IO.File.Open(dlg.FileName, System.IO.FileMode.Create))
+                        {
+                            var pdf = new PdfSharpCore.Pdf.PdfDocument();
+                            var page = pdf.AddPage();
+                            // set page size to match image
+                            using (var imgStream = new System.IO.MemoryStream(pngBytes))
+                            {
+                                var image = PdfSharpCore.Drawing.XImage.FromStream(() => imgStream);
+                                // Use image point dimensions (PDF points) to size the page
+                                page.Width = PdfSharpCore.Drawing.XUnit.FromPoint(image.PointWidth);
+                                page.Height = PdfSharpCore.Drawing.XUnit.FromPoint(image.PointHeight);
+                                var gfx = PdfSharpCore.Drawing.XGraphics.FromPdfPage(page);
+                                gfx.DrawImage(image, 0, 0, page.Width, page.Height);
+                                pdf.Save(pdfStream);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        StatusMessage = $"Failed to create PDF: {ex.Message}";
+                        return;
+                    }
+                }
+
+                // Save record to database (reuse SaveBarcodeRecordAsync)
+                var saved = await _databaseService.SaveBarcodeRecordAsync(
+                    BarcodeData,
+                    BarcodeValue,
+                    Description ?? string.Empty,
+                    Copies,
+                    LabelWidth,
+                    LabelHeight,
+                    BarcodeWidth,
+                    BarcodeHeight,
+                    Comment);
+
+                // Update recent list
+                var existing = RecentBarcodes.FirstOrDefault(r => r.Id == saved.Id);
+                if (existing != null)
+                    RecentBarcodes.Remove(existing);
+
+                RecentBarcodes.Insert(0, saved);
+                while (RecentBarcodes.Count > 10)
+                    RecentBarcodes.RemoveAt(RecentBarcodes.Count - 1);
+
+                // Clear inputs
+                ClearAllInputs();
+
+                StatusMessage = $"PDF saved and record saved: {saved.BarcodeText}";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Save PDF failed: {ex.Message}";
+            }
+        }
+
+        private bool CanSave() => IsValidData && !IsPrinting;
+
         [RelayCommand]
         private void ClearData()
         {
@@ -260,7 +440,7 @@ namespace BarcodeGenerator.ViewModels
         [RelayCommand]
         private void OpenHistory()
         {
-            var historyWindow = new HistoryWindow(_databaseService);
+            var historyWindow = new HistoryWindow(_databaseService, _mainViewModel);
             historyWindow.Show();
         }
 
@@ -270,12 +450,14 @@ namespace BarcodeGenerator.ViewModels
             BarcodeGeneratorService barcodeGenerator,
             PrinterService printerService,
             SettingsService settingsService,
-            DatabaseService databaseService)
+            DatabaseService databaseService,
+            MainViewModel? mainViewModel)
         {
             _barcodeGenerator = barcodeGenerator ?? throw new ArgumentNullException(nameof(barcodeGenerator));
             _printerService = printerService ?? throw new ArgumentNullException(nameof(printerService));
             _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
             _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
+            _mainViewModel = mainViewModel; // Allow null for root instance
 
             AvailablePrinters = new ObservableCollection<string>();
             RecentBarcodes = new ObservableCollection<BarcodeRecord>();
@@ -289,6 +471,7 @@ namespace BarcodeGenerator.ViewModels
 
             // Register message handlers
             WeakReferenceMessenger.Default.Register<LoadBarcodeMessage>(this, OnLoadBarcodeMessage);
+            WeakReferenceMessenger.Default.Register<BarcodeDeletedMessage>(this, OnBarcodeDeletedMessage);
 
             // Load initial data
             InitializeAsync();
@@ -331,7 +514,8 @@ namespace BarcodeGenerator.ViewModels
             LabelHeight = settings.LabelSettings.LabelHeight;
             BarcodeWidth = settings.LabelSettings.BarcodeWidth;
             BarcodeHeight = settings.LabelSettings.BarcodeHeight;
-            FontSize = settings.LabelSettings.FontSize;
+            DescriptionFontSize = settings.LabelSettings.DescriptionFontSize;
+            LabelFontSize = settings.LabelSettings.LabelFontSize;
 
             // Apply last barcode data
             BarcodeData = settings.LastBarcodeData.Data;
@@ -410,11 +594,6 @@ namespace BarcodeGenerator.ViewModels
         partial void OnBarcodeHeightChanged(double value)
         {
             ValidateInput();
-            TriggerPreviewUpdate();
-        }
-
-        partial void OnFontSizeChanged(int value)
-        {
             TriggerPreviewUpdate();
         }
 
@@ -512,7 +691,11 @@ namespace BarcodeGenerator.ViewModels
                     LabelWidth, 
                     LabelHeight, 
                     BarcodeWidth, 
-                    BarcodeHeight))
+                    BarcodeHeight,
+                    LabelFontSize,
+                    DescriptionFontSize,
+                    Models.LabelTextAlignment.Center, // Label alignment - default to center
+                    Models.LabelTextAlignment.Center)) // Description alignment - default to center
                 {
                     PreviewImage = _barcodeGenerator.ConvertToBitmapSource(labelImage);
                 }
@@ -531,7 +714,18 @@ namespace BarcodeGenerator.ViewModels
         {
             try
             {
-                using (var placeholder = ImageHelper.CreatePlaceholderImage(400, 200, message))
+                // Calculate dynamic placeholder size based on barcode value length
+                int placeholderWidth = 400;
+                int placeholderHeight = 200;
+                
+                // If barcode value is longer than 16 characters, expand placeholder
+                if (!string.IsNullOrEmpty(BarcodeValue) && BarcodeValue.Length > 16)
+                {
+                    double expansionFactor = Math.Min(2.0, 1.0 + (BarcodeValue.Length - 16) * 0.05);
+                    placeholderWidth = (int)(400 * expansionFactor);
+                }
+                
+                using (var placeholder = ImageHelper.CreatePlaceholderImage(placeholderWidth, placeholderHeight, message))
                 {
                     return ImageHelper.ConvertToBitmapSource(placeholder);
                 }
@@ -661,7 +855,8 @@ namespace BarcodeGenerator.ViewModels
                 LabelHeight = LabelHeight,
                 BarcodeWidth = BarcodeWidth,
                 BarcodeHeight = BarcodeHeight,
-                FontSize = FontSize
+                DescriptionFontSize = DescriptionFontSize,
+                LabelFontSize = LabelFontSize
             };
         }
 
@@ -702,7 +897,8 @@ namespace BarcodeGenerator.ViewModels
             LabelHeight = defaults.LabelSettings.LabelHeight;
             BarcodeWidth = defaults.LabelSettings.BarcodeWidth;
             BarcodeHeight = defaults.LabelSettings.BarcodeHeight;
-            FontSize = defaults.LabelSettings.FontSize;
+            DescriptionFontSize = defaults.LabelSettings.DescriptionFontSize;
+            LabelFontSize = defaults.LabelSettings.LabelFontSize;
             
             UpdatePreview();
             StatusMessage = "Label dimensions reset to default";
@@ -835,7 +1031,6 @@ namespace BarcodeGenerator.ViewModels
 
         private void OnLoadBarcodeMessage(object recipient, LoadBarcodeMessage message)
         {
-            // Load the barcode data from the history record
             var barcode = message.Barcode;
             
             BarcodeData = barcode.BarcodeText;
@@ -846,11 +1041,14 @@ namespace BarcodeGenerator.ViewModels
             BarcodeHeight = barcode.LastBarcodeHeight ?? BarcodeHeight;
             Copies = barcode.DefaultLabelCount;
             
-            // Set current record
             CurrentBarcodeRecord = barcode;
             
-            // Trigger preview update
             TriggerPreviewUpdate();
+        }
+
+        private async void OnBarcodeDeletedMessage(object recipient, BarcodeDeletedMessage message)
+        {
+            await LoadRecentBarcodesAsync();
         }
 
         #endregion
@@ -874,4 +1072,5 @@ namespace BarcodeGenerator.ViewModels
 namespace BarcodeGenerator.ViewModels
 {
     public record LoadBarcodeMessage(BarcodeRecord Barcode);
+    public record BarcodeDeletedMessage(int BarcodeId);
 }

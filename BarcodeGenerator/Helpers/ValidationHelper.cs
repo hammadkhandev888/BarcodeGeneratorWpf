@@ -201,7 +201,7 @@ namespace BarcodeGenerator.Helpers
         /// <returns>Validation result</returns>
         public static (bool IsValid, string ErrorMessage) ValidateFontSize(int fontSize)
         {
-            const int minFontSize = 6;
+            const int minFontSize = 1;
             const int maxFontSize = 72;
 
             if (fontSize < minFontSize || fontSize > maxFontSize)
