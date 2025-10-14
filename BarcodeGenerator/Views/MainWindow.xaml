@@ -133,12 +133,6 @@
                                     MaxLength="100"
                                     Style="{StaticResource InputTextBoxStyle}"
                                     ToolTip="Additional notes or description for record keeping (not printed on label)"/>
-                            
-                            <!-- Number of copies -->
-                            <TextBlock Text="Number of Copies:" Style="{StaticResource InputLabelStyle}"/>
-                            <TextBox Text="{Binding Copies, UpdateSourceTrigger=PropertyChanged}" 
-                                    Style="{StaticResource InputTextBoxStyle}"
-                                    ToolTip="Number of labels to print"/>
                         </StackPanel>
                     </Border>
                     
@@ -369,6 +363,13 @@
                                       Margin="0,2"/>
                         </StackPanel>
                     </Border>
+
+                    <!-- Number of copies -->
+                    <TextBlock Text="Number of Copies:" Style="{StaticResource InputLabelStyle}"/>
+                    <TextBox Text="{Binding Copies, UpdateSourceTrigger=PropertyChanged}" 
+                            Style="{StaticResource InputTextBoxStyle}"
+                            ToolTip="Number of labels to print"
+                            Margin="0,0,0,15"/>
 
                     <!-- Printer Selection -->
                     <TextBlock Text="Selected Printer:" Style="{StaticResource InputLabelStyle}"/>
