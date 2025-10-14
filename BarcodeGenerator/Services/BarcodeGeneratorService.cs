@@ -25,7 +25,8 @@ namespace BarcodeGenerator.Services
                 {
                     Width = 300,
                     Height = 100,
-                    Margin = 10
+                    Margin = 10,
+                    PureBarcode = true  // Don't include text below barcode
                 }
             };
         }
@@ -37,7 +38,7 @@ namespace BarcodeGenerator.Services
         /// <param name="width">Width in pixels</param>
         /// <param name="height">Height in pixels</param>
         /// <returns>Bitmap image of the barcode</returns>
-        public Image GenerateCode128Barcode(string data, int width, int height)
+        public Bitmap GenerateCode128Barcode(string data, int width, int height)
         {
             try
             {
@@ -54,7 +55,6 @@ namespace BarcodeGenerator.Services
 
                 // Generate barcode
                 var bitmap = _barcodeWriter.Write(data);
-                
                 return bitmap;
             }
             catch (Exception ex)
@@ -210,7 +210,8 @@ namespace BarcodeGenerator.Services
         /// <param name="dpi">DPI for conversion (96 for screen, 203 for printer)</param>
         /// <returns>Preview image scaled for display</returns>
         public Image GeneratePreviewImage(
-            string barcodeText, 
+            string barcodeValue, 
+            string labelText, 
             string description, 
             double labelWidthMm, 
             double labelHeightMm, 
@@ -226,8 +227,8 @@ namespace BarcodeGenerator.Services
                 int barcodeWidthPx = ConvertMmToPixels(barcodeWidthMm, dpi);
                 int barcodeHeightPx = ConvertMmToPixels(barcodeHeightMm, dpi);
 
-                // Generate barcode with label dimensions
-                var barcodeImage = GenerateCode128Barcode(barcodeText, barcodeWidthPx, barcodeHeightPx);
+                // Generate barcode (only encoding the value, no visible text)
+                var barcodeImage = GenerateCode128Barcode(barcodeValue, barcodeWidthPx, barcodeHeightPx);
 
                 // Create label-sized canvas
                 var labelBitmap = new Bitmap(labelWidthPx, labelHeightPx);
@@ -243,19 +244,37 @@ namespace BarcodeGenerator.Services
 
                     graphics.DrawImage(barcodeImage, barcodeX, barcodeY);
 
-                    // Draw description text below barcode
-                    if (!string.IsNullOrEmpty(description))
+                    float currentY = barcodeY + barcodeImage.Height + 10;
+
+                    // Draw label text below barcode (if provided) - smaller size
+                    if (!string.IsNullOrEmpty(labelText))
                     {
-                        using (var font = new Font("Arial", 10, FontStyle.Regular))
+                        using (var labelFont = new Font("Arial", 10, FontStyle.Bold))
                         {
-                            var textSize = graphics.MeasureString(description, font);
-                            float textX = (labelWidthPx - textSize.Width) / 2;
-                            float textY = barcodeY + barcodeImage.Height + 10;
+                            var labelSize = graphics.MeasureString(labelText, labelFont);
+                            float labelX = (labelWidthPx - labelSize.Width) / 2;
 
                             // Ensure text fits on label
-                            if (textY + textSize.Height <= labelHeightPx - 10)
+                            if (currentY + labelSize.Height <= labelHeightPx - 10)
                             {
-                                graphics.DrawString(description, font, Brushes.Black, textX, textY);
+                                graphics.DrawString(labelText, labelFont, Brushes.Black, labelX, currentY);
+                                currentY += labelSize.Height + 5; // Update position for next text
+                            }
+                        }
+                    }
+
+                    // Draw description text below label text (if provided) - same size as previous label
+                    if (!string.IsNullOrEmpty(description))
+                    {
+                        using (var descFont = new Font("Arial", 12, FontStyle.Regular))
+                        {
+                            var descSize = graphics.MeasureString(description, descFont);
+                            float descX = (labelWidthPx - descSize.Width) / 2;
+
+                            // Ensure text fits on label
+                            if (currentY + descSize.Height <= labelHeightPx - 10)
+                            {
+                                graphics.DrawString(description, descFont, Brushes.Black, descX, currentY);
                             }
                         }
                     }

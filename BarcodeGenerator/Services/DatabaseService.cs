@@ -30,6 +30,7 @@ namespace BarcodeGenerator.Services
         /// </summary>
         public async Task<BarcodeRecord> SaveBarcodeRecordAsync(
             string barcodeText,
+            string barcodeValue,
             string description,
             int defaultLabelCount,
             double labelWidth,
@@ -47,6 +48,7 @@ namespace BarcodeGenerator.Services
             if (existingRecord != null)
             {
                 // Update existing record
+                existingRecord.BarcodeValue = barcodeValue;
                 existingRecord.Description = description;
                 existingRecord.DefaultLabelCount = defaultLabelCount;
                 existingRecord.LastLabelWidth = labelWidth;
@@ -67,6 +69,7 @@ namespace BarcodeGenerator.Services
                 var newRecord = new BarcodeRecord
                 {
                     BarcodeText = barcodeText,
+                    BarcodeValue = barcodeValue,
                     Description = description,
                     DefaultLabelCount = defaultLabelCount,
                     LastLabelWidth = labelWidth,

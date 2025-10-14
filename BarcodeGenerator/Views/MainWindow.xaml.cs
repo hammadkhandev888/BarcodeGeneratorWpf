@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using BarcodeGenerator.ViewModels;
 using BarcodeGenerator.Services;
+using BarcodeGenerator.Models;
 
 namespace BarcodeGenerator.Views;
 
@@ -77,6 +78,17 @@ public partial class MainWindow : Window
                 scrollViewer.RenderTransformOrigin = new Point(0.5, 0.5);
                 
                 e.Handled = true;
+            }
+        }
+    }
+
+    private void ListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is ListBox listBox && listBox.SelectedItem is BarcodeRecord selectedRecord)
+        {
+            if (_viewModel?.LoadBarcodeCommand?.CanExecute(selectedRecord) == true)
+            {
+                _viewModel.LoadBarcodeCommand.Execute(selectedRecord);
             }
         }
     }

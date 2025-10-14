@@ -27,8 +27,10 @@
         <Style x:Key="InputLabelStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Margin" Value="0,8,5,4"/>
-            <Setter Property="VerticalAlignment" Value="Bottom"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+            <Setter Property="Height" Value="Auto"/>
         </Style>
         
         <Style x:Key="InputTextBoxStyle" TargetType="TextBox">
@@ -36,7 +38,8 @@
             <Setter Property="BorderBrush" Value="#BDC3C7"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Height" Value="32"/>
+            <Setter Property="MinHeight" Value="32"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
         
         <Style x:Key="PrimaryButtonStyle" TargetType="Button">
@@ -108,20 +111,34 @@
                     <TextBlock Text="Barcode Data" Style="{StaticResource SectionHeaderStyle}"/>
                     <Border BorderBrush="#E8E8E8" BorderThickness="1" Padding="15" Background="#FAFAFA" CornerRadius="4" Margin="0,0,0,10">
                         <StackPanel>
-                            <TextBlock Text="Barcode Text (Max 35 chars):" Style="{StaticResource InputLabelStyle}"/>
+                            <!-- Primary barcode value that gets encoded -->
+                            <TextBlock Text="Barcode Value (Max 35 chars):" Style="{StaticResource InputLabelStyle}"/>
+                            <TextBox x:Name="BarcodeValueTextBox" 
+                                    Text="{Binding BarcodeValue, UpdateSourceTrigger=PropertyChanged}" 
+                                    MaxLength="35"
+                                    Style="{StaticResource InputTextBoxStyle}"
+                                    ToolTip="The actual data that will be encoded in the barcode"/>
+                            
+                            <!-- Text that appears below the barcode on the label -->
+                            <TextBlock Text="Label Text Below Barcode :" Style="{StaticResource InputLabelStyle}"/>
                             <TextBox x:Name="BarcodeDataTextBox" 
                                     Text="{Binding BarcodeData, UpdateSourceTrigger=PropertyChanged}" 
                                     MaxLength="35"
-                                    Style="{StaticResource InputTextBoxStyle}"/>
+                                    Style="{StaticResource InputTextBoxStyle}"
+                                    ToolTip="Text that will be displayed below the barcode on the printed label"/>
                             
-                            <TextBlock Text="Description:" Style="{StaticResource InputLabelStyle}"/>
+                            <!-- Description for record keeping -->
+                            <TextBlock Text="Description/Notes (Max 100 chars):" Style="{StaticResource InputLabelStyle}"/>
                             <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
                                     MaxLength="100"
-                                    Style="{StaticResource InputTextBoxStyle}"/>
+                                    Style="{StaticResource InputTextBoxStyle}"
+                                    ToolTip="Additional notes or description for record keeping (not printed on label)"/>
                             
+                            <!-- Number of copies -->
                             <TextBlock Text="Number of Copies:" Style="{StaticResource InputLabelStyle}"/>
                             <TextBox Text="{Binding Copies, UpdateSourceTrigger=PropertyChanged}" 
-                                    Style="{StaticResource InputTextBoxStyle}"/>
+                                    Style="{StaticResource InputTextBoxStyle}"
+                                    ToolTip="Number of labels to print"/>
                         </StackPanel>
                     </Border>
                     
@@ -192,53 +209,11 @@
                         </Grid>
                     </Border>
                     
-                    <!-- Printer Selection -->
-                    <TextBlock Text="Printer Selection" Style="{StaticResource SectionHeaderStyle}"/>
+                    <!-- Utilities -->
+                    <TextBlock Text="Utilities" Style="{StaticResource SectionHeaderStyle}"/>
                     <Border BorderBrush="#E8E8E8" BorderThickness="1" Padding="15" Background="#FAFAFA" CornerRadius="4" Margin="0,0,0,10">
                         <StackPanel>
-                            <TextBlock Text="Available Printers:" Style="{StaticResource InputLabelStyle}"/>
-                            <ComboBox ItemsSource="{Binding AvailablePrinters}" 
-                                     SelectedItem="{Binding SelectedPrinter}"
-                                     Padding="8" 
-                                     BorderBrush="#BDC3C7" 
-                                     BorderThickness="1"
-                                     Height="32"
-                                     FontSize="12"/>
-                            
-                            <Button Content="🔄 Refresh Printers" 
-                                   Style="{StaticResource SecondaryButtonStyle}"
-                                   Margin="0,15,0,0"
-                                   Command="{Binding RefreshPrintersCommand}"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Print Actions -->
-                    <TextBlock Text="Print Actions" Style="{StaticResource SectionHeaderStyle}"/>
-                    <Border BorderBrush="#E8E8E8" BorderThickness="1" Padding="15" Background="#FAFAFA" CornerRadius="4" Margin="0,0,0,10">
-                        <StackPanel>
-                            <Button Content="🖨️ Print Labels" 
-                                   Style="{StaticResource PrimaryButtonStyle}"
-                                   Margin="0,8"
-                                   Command="{Binding PrintLabelsCommand}"
-                                   IsEnabled="{Binding IsValidData}"/>
-                            
-                            <Button Content="🧪 Test Print" 
-                                   Style="{StaticResource SecondaryButtonStyle}"
-                                   Margin="0,5"
-                                   Command="{Binding TestPrintCommand}"/>
-                            
-                            <Button Content="📄 Test ZPL" 
-                                   Style="{StaticResource SecondaryButtonStyle}"
-                                   Margin="0,5"
-                                   Command="{Binding TestZplGenerationCommand}"/>
-                            
-                            <Button Content="🔗 Test Printer" 
-                                   Style="{StaticResource SecondaryButtonStyle}"
-                                   Margin="0,5"
-                                   Command="{Binding TestPrinterConnectionCommand}"
-                                   IsEnabled="{Binding HasSelectedPrinter}"/>
-                            
-                            <Button Content="🗑️ Clear Data" 
+                            <Button Content="🗑️ Clear All Data" 
                                    Style="{StaticResource SecondaryButtonStyle}"
                                    Margin="0,5"
                                    Command="{Binding ClearDataCommand}"/>
@@ -275,9 +250,8 @@
                                   Foreground="#2C3E50"
                                   VerticalAlignment="Center"/>
                         
-                        <CheckBox Grid.Column="1" 
-                                 Content="👁️ Show Preview" 
-                                 IsChecked="{Binding ShowPreview}"
+                        <TextBlock Grid.Column="1"
+                                 Text="Show Preview"
                                  FontSize="12"
                                  VerticalAlignment="Center"/>
                     </Grid>
@@ -300,7 +274,10 @@
                                   Stretch="None"
                                   HorizontalAlignment="Center"
                                   VerticalAlignment="Center"
-                                  Margin="20"/>
+                                  Margin="20"
+                                  Cursor="Hand"
+                                  ToolTip="🔄 Double-click to reload barcode preview"
+                        />
                         </ScrollViewer>
                         
                         <!-- Loading Indicator (only show when preview is enabled AND generating) -->
@@ -337,11 +314,13 @@
                        Background="{Binding IsValidData, Converter={x:Static converters:BooleanToBrushConverter.Default}}"
                        BorderBrush="#E8E8E8" 
                        BorderThickness="0,1,1,1" 
-                       Padding="10">
+                       Padding="10"
+                       MinHeight="35">
                     <TextBlock Text="{Binding ValidationMessage}" 
                               FontSize="11"
                               Foreground="{Binding IsValidData, Converter={x:Static converters:BooleanToTextBrushConverter.Default}}"
-                              TextWrapping="Wrap"/>
+                              TextWrapping="Wrap"
+                              VerticalAlignment="Center"/>
                 </Border>
             </Grid>
 
@@ -358,8 +337,41 @@
                               Foreground="#2C3E50"
                               Margin="0,0,0,20"/>
 
+                    <!-- Current Data Summary -->
+                    <Border Background="#F8F9FA" 
+                           BorderBrush="#E8E8E8" 
+                           BorderThickness="1"
+                           Padding="12"
+                           CornerRadius="4"
+                           Margin="0,0,0,15"
+                           MinHeight="100">
+                        <StackPanel>
+                            <TextBlock Text="Ready to Print:" 
+                                      FontSize="12" 
+                                      FontWeight="Bold"
+                                      Foreground="#2C3E50"
+                                      Margin="0,0,0,8"/>
+                            <TextBlock Text="{Binding BarcodeValue, StringFormat='Barcode: {0}'}" 
+                                      FontSize="11"
+                                      Foreground="#34495E"
+                                      TextWrapping="Wrap"
+                                      Margin="0,2"
+                                      ToolTip="Data encoded in the barcode"/>
+                            <TextBlock Text="{Binding BarcodeData, StringFormat='Label Text: {0}'}" 
+                                      FontSize="11"
+                                      Foreground="#34495E"
+                                      TextWrapping="Wrap"
+                                      Margin="0,2"
+                                      ToolTip="Text displayed below the barcode"/>
+                            <TextBlock Text="{Binding Copies, StringFormat='Copies: {0}'}" 
+                                      FontSize="11"
+                                      Foreground="#34495E"
+                                      Margin="0,2"/>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Printer Selection -->
-                    <TextBlock Text="Printer:" Style="{StaticResource InputLabelStyle}"/>
+                    <TextBlock Text="Selected Printer:" Style="{StaticResource InputLabelStyle}"/>
                     <ComboBox ItemsSource="{Binding AvailablePrinters}"
                              SelectedItem="{Binding SelectedPrinter}"
                              Padding="8" 
@@ -367,25 +379,18 @@
                              BorderThickness="1"
                              Height="32"
                              FontSize="12"
-                             Margin="0,0,0,15"/>
-                    
-                    <!-- Label Count -->
-                    <TextBlock Text="Copies:" Style="{StaticResource InputLabelStyle}"/>
-                    <TextBox Text="{Binding Copies}" 
-                            Style="{StaticResource InputTextBoxStyle}"
-                            Margin="0,0,0,20"/>
+                             Margin="0,0,0,20"
+                             ToolTip="Select the printer for label output"/>
                     
                     <!-- Action Buttons -->
                     <Button Content="🖨️ Print Labels" 
                            Command="{Binding PrintLabelsCommand}"
                            Style="{StaticResource PrimaryButtonStyle}"
                            IsEnabled="{Binding IsValidData}"
-                           Margin="0,0,0,10"/>
+                           Margin="0,0,0,10"
+                           ToolTip="Print the configured labels"/>
                     
-                    <Button Content="🧪 Test Print" 
-                           Command="{Binding TestPrintCommand}"
-                           Style="{StaticResource SecondaryButtonStyle}"
-                           Margin="0,0,0,10"/>
+                  
                     
                     <!-- Refresh Printers -->
                     <Button Content="🔄 Refresh Printers" 
@@ -427,23 +432,29 @@
                             SelectedItem="{Binding CurrentBarcodeRecord}"
                             Height="400"
                             Margin="0,0,0,10"
-                            SelectionMode="Single">
+                            SelectionMode="Single"
+                            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             MouseDoubleClick="ListBox_MouseDoubleClick"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border Padding="8" 
+                                <Border Padding="10" 
                                        Margin="2"
                                        Background="White"
                                        BorderBrush="LightGray"
                                        BorderThickness="1"
-                                       CornerRadius="3">
+                                       CornerRadius="3"
+                                       MinHeight="120">
                                     <StackPanel>
                                         <TextBlock Text="{Binding BarcodeText}" 
                                                   FontWeight="Bold"
-                                                  FontSize="12"/>
+                                                  FontSize="12"
+                                                  TextWrapping="Wrap"/>
                                         <TextBlock Text="{Binding Description}" 
                                                   FontSize="10"
                                                   Foreground="Gray"
-                                                  TextTrimming="CharacterEllipsis"/>
+                                                  TextWrapping="Wrap"
+                                                  MaxHeight="40"/>
                                         <TextBlock FontSize="9" Foreground="DarkGray">
                                             <Run Text="Default:"/>
                                             <Run Text="{Binding DefaultLabelCount}"/>

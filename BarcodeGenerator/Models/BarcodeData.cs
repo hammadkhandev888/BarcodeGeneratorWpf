@@ -15,6 +15,13 @@ namespace BarcodeGenerator.Models
         public string Data { get; set; } = string.Empty;
 
         /// <summary>
+        /// The actual barcode value that will be encoded (max 35 characters for Code 128)
+        /// </summary>
+        [Required]
+        [StringLength(35, ErrorMessage = "Barcode value cannot exceed 35 characters")]
+        public string Value { get; set; } = string.Empty;
+
+        /// <summary>
         /// Description text to be printed below the barcode on the label
         /// </summary>
         [StringLength(100, ErrorMessage = "Description cannot exceed 100 characters")]
@@ -32,12 +39,12 @@ namespace BarcodeGenerator.Models
         /// <returns>True if valid, false otherwise</returns>
         public bool IsValid()
         {
-            // Check if data is not empty and within character limit
-            if (string.IsNullOrWhiteSpace(Data) || Data.Length > 35)
+            // Check if value is not empty and within character limit (this is what gets encoded)
+            if (string.IsNullOrWhiteSpace(Value) || Value.Length > 35)
                 return false;
 
             // Check if all characters are valid for Code 128 (ASCII 0-127)
-            foreach (char c in Data)
+            foreach (char c in Value)
             {
                 if (c > 127)
                     return false;
@@ -52,16 +59,16 @@ namespace BarcodeGenerator.Models
         /// <returns>Error message or empty string if valid</returns>
         public string GetValidationError()
         {
-            if (string.IsNullOrWhiteSpace(Data))
-                return "Barcode data is required";
+            if (string.IsNullOrWhiteSpace(Value))
+                return "Barcode value is required";
             
-            if (Data.Length > 35)
-                return "Barcode data cannot exceed 35 characters";
+            if (Value.Length > 35)
+                return "Barcode value cannot exceed 35 characters";
             
-            foreach (char c in Data)
+            foreach (char c in Value)
             {
                 if (c > 127)
-                    return "Barcode data contains invalid characters";
+                    return "Barcode value contains invalid characters";
             }
             
             return string.Empty;

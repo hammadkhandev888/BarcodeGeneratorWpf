@@ -29,6 +29,14 @@ namespace BarcodeGenerator.Models
         private string _barcodeText = string.Empty;
 
         /// <summary>
+        /// The actual barcode value that gets encoded (max 35 characters for Code 128)
+        /// </summary>
+        [Required]
+        [MaxLength(35)]
+        [ObservableProperty]
+        private string _barcodeValue = string.Empty;
+
+        /// <summary>
         /// Description text displayed below barcode (max 500 characters)
         /// </summary>
         [Required]

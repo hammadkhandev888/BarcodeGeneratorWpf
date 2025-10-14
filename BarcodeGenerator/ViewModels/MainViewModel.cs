@@ -30,6 +30,9 @@ namespace BarcodeGenerator.ViewModels
         private string _barcodeData = string.Empty;
 
         [ObservableProperty]
+        private string _barcodeValue = string.Empty;
+
+        [ObservableProperty]
         private string _description = string.Empty;
 
         [ObservableProperty]
@@ -115,17 +118,7 @@ namespace BarcodeGenerator.ViewModels
             await ExecutePrintAsync();
         }
 
-        [RelayCommand]
-        private async Task TestPrintAsync()
-        {
-            await ExecuteTestPrintAsync();
-        }
 
-        [RelayCommand]
-        private void RefreshPrinters()
-        {
-            LoadAvailablePrinters();
-        }
 
         [RelayCommand]
         private void TestZplGeneration()
@@ -135,6 +128,7 @@ namespace BarcodeGenerator.ViewModels
                 var testData = new BarcodeData
                 {
                     Data = !string.IsNullOrEmpty(BarcodeData) ? BarcodeData : "TEST123",
+                    Value = !string.IsNullOrEmpty(BarcodeValue) ? BarcodeValue : "TEST123",
                     Description = !string.IsNullOrEmpty(Description) ? Description : "Test Label",
                     Copies = Copies
                 };
@@ -341,6 +335,7 @@ namespace BarcodeGenerator.ViewModels
 
             // Apply last barcode data
             BarcodeData = settings.LastBarcodeData.Data;
+            BarcodeValue = settings.LastBarcodeData.Value;
             Description = settings.LastBarcodeData.Description;
             Copies = settings.LastBarcodeData.Copies;
 
@@ -378,6 +373,12 @@ namespace BarcodeGenerator.ViewModels
         #region Property Changed Handlers
 
         partial void OnBarcodeDataChanged(string value)
+        {
+            ValidateInput();
+            TriggerPreviewUpdate();
+        }
+
+        partial void OnBarcodeValueChanged(string value)
         {
             ValidateInput();
             TriggerPreviewUpdate();
@@ -423,7 +424,7 @@ namespace BarcodeGenerator.ViewModels
 
         private void ValidateInput()
         {
-            var barcodeValidation = ValidationHelper.ValidateBarcodeText(BarcodeData);
+            var barcodeValidation = ValidationHelper.ValidateBarcodeText(BarcodeValue);
             var labelValidation = ValidationHelper.ValidateLabelSize(LabelWidth, LabelHeight);
             var barcodeValidation2 = ValidationHelper.ValidateBarcodeSize(BarcodeWidth, BarcodeHeight);
             var layoutValidation = ValidationHelper.ValidateLayout(
@@ -505,8 +506,9 @@ namespace BarcodeGenerator.ViewModels
 
                 // Generate barcode image
                 using (var labelImage = _barcodeGenerator.GeneratePreviewImage(
+                    BarcodeValue, 
                     BarcodeData, 
-                    Description, 
+                    Description,
                     LabelWidth, 
                     LabelHeight, 
                     BarcodeWidth, 
@@ -562,6 +564,7 @@ namespace BarcodeGenerator.ViewModels
                 {
                     CurrentBarcodeRecord = await _databaseService.SaveBarcodeRecordAsync(
                         BarcodeData,
+                        BarcodeValue,
                         Description ?? string.Empty,
                         Copies,
                         LabelWidth,
@@ -644,6 +647,7 @@ namespace BarcodeGenerator.ViewModels
             return new BarcodeData
             {
                 Data = BarcodeData,
+                Value = BarcodeValue,
                 Description = Description,
                 Copies = Copies
             };
@@ -707,6 +711,7 @@ namespace BarcodeGenerator.ViewModels
         private void ClearAllInputs()
         {
             BarcodeData = string.Empty;
+            BarcodeValue = string.Empty;
             Description = string.Empty;
             Copies = 1;
             StatusMessage = "Inputs cleared";
@@ -757,9 +762,11 @@ namespace BarcodeGenerator.ViewModels
         {
             try
             {
+                
                 BarcodeData = record.BarcodeText;
                 Description = record.Description;
                 Copies = record.DefaultLabelCount;
+                BarcodeValue = record.BarcodeValue;
 
                 // Load saved dimensions if available
                 if (record.LastLabelWidth.HasValue) LabelWidth = record.LastLabelWidth.Value;
