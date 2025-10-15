@@ -51,35 +51,35 @@ namespace BarcodeGenerator.Helpers
             zpl.AppendLine($"^FO{barcodePosition.X},{barcodePosition.Y}");
             
             // Calculate module width and ratio for barcode
-            int moduleWidth = Math.Max(1, barcodeWidthDots / (barcodeData.Value.Length * 11)); // Approximate
-            moduleWidth = Math.Min(moduleWidth, 10); // Limit maximum module width
+            int moduleWidth = Math.Max(2, barcodeWidthDots / (barcodeData.Value.Length * 11)); 
+            moduleWidth = Math.Min(moduleWidth, 10); 
             
             zpl.AppendLine($"^BY{moduleWidth},3,{barcodeHeightDots}");
-            zpl.AppendLine($"^BCN,{barcodeHeightDots},Y,N,N"); // Code 128, normal orientation, print interpretation line
+            zpl.AppendLine($"^BCN,{barcodeHeightDots},N,N,N"); 
             zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Value)}^FS");
 
             // Label text below barcode if provided - using LabelFontSize
             int currentTextY = textPosition.Y;
             if (!string.IsNullOrWhiteSpace(barcodeData.Data))
             {
-                // Use LabelFontSize for label text
                 int labelFontSize = ConvertFontSizeToZpl(labelSettings.LabelFontSize);
                 
-                zpl.AppendLine($"^FO{textPosition.X},{currentTextY}");
-                zpl.AppendLine($"^A0N,{labelFontSize},{labelFontSize}"); // Font for label text
+                zpl.AppendLine($"^FO{barcodePosition.X},{currentTextY}");
+                zpl.AppendLine($"^A0N,{labelFontSize},{labelFontSize}");
+                zpl.AppendLine($"^FB{barcodeWidthDots},2,0,C,0");
                 zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Data)}^FS");
                 
-                currentTextY += labelFontSize + 10; // Move down for next text
+                currentTextY += (labelFontSize * 2) + 10; 
             }
 
             // Description text below label text if provided - using DescriptionFontSize
             if (!string.IsNullOrWhiteSpace(barcodeData.Description))
             {
-                // Use DescriptionFontSize for description
                 int descFontSize = ConvertFontSizeToZpl(labelSettings.DescriptionFontSize);
                 
-                zpl.AppendLine($"^FO{textPosition.X},{currentTextY}");
-                zpl.AppendLine($"^A0N,{descFontSize},{descFontSize}"); // Font for description
+                zpl.AppendLine($"^FO{barcodePosition.X},{currentTextY}");
+                zpl.AppendLine($"^A0N,{descFontSize},{descFontSize}");
+                zpl.AppendLine($"^FB{barcodeWidthDots},2,0,C,0");
                 zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Description)}^FS");
             }
 

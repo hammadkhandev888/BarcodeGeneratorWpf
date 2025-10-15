@@ -201,8 +201,8 @@ namespace BarcodeGenerator.Services
         public async Task<List<BarcodeRecord>> GetRecentlyUsedBarcodesAsync(int count = 20)
         {
             return await _context.BarcodeRecords
-                .Where(r => r.IsActive && r.LastPrintedDate != null)
-                .OrderByDescending(r => r.LastPrintedDate)
+                .Where(r => r.IsActive && r.LastModifiedDate != null)
+                .OrderByDescending(r => r.CreatedDate)
                 .Take(count)
                 .ToListAsync();
         }

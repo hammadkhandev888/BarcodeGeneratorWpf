@@ -43,7 +43,7 @@ namespace BarcodeGenerator.ViewModels
         private double _labelWidth = 100.0;
 
         [ObservableProperty]
-        private double _labelHeight = 60.0;
+        private double _labelHeight = 50.0;
 
         [ObservableProperty]
         private double _barcodeWidth = 80.0;
@@ -310,7 +310,7 @@ namespace BarcodeGenerator.ViewModels
                 {
                     Filter = "PDF Files (*.pdf)|*.pdf",
                     DefaultExt = "pdf",
-                    FileName = string.IsNullOrWhiteSpace(BarcodeValue) ? "barcode" : BarcodeValue,
+                    FileName = string.IsNullOrWhiteSpace(BarcodeData) ? "barcode" : BarcodeData,
                     InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
                 };
 

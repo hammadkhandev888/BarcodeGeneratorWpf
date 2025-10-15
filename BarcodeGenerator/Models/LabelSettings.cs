@@ -19,7 +19,7 @@ namespace BarcodeGenerator.Models
     public partial class LabelSettings : ObservableObject
     {
         private double _labelWidth = 100.0; // Default 100mm
-        private double _labelHeight = 60.0; // Default 60mm
+        private double _labelHeight = 50.0; // Default 50mm
         private double _barcodeWidth = 80.0; // Default 80mm
         private double _barcodeHeight = 20.0; // Default 20mm
 
