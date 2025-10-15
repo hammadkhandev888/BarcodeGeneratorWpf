@@ -856,7 +856,9 @@ namespace BarcodeGenerator.ViewModels
                 BarcodeWidth = BarcodeWidth,
                 BarcodeHeight = BarcodeHeight,
                 DescriptionFontSize = DescriptionFontSize,
-                LabelFontSize = LabelFontSize
+                LabelFontSize = LabelFontSize,
+                LabelTextAlignment = LabelTextAlignment.Center,
+                DescriptionTextAlignment = LabelTextAlignment.Center
             };
         }
 

@@ -58,28 +58,30 @@ namespace BarcodeGenerator.Helpers
             zpl.AppendLine($"^BCN,{barcodeHeightDots},N,N,N"); 
             zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Value)}^FS");
 
-            // Label text below barcode if provided - using LabelFontSize
             int currentTextY = textPosition.Y;
             if (!string.IsNullOrWhiteSpace(barcodeData.Data))
             {
                 int labelFontSize = ConvertFontSizeToZpl(labelSettings.LabelFontSize);
+                string labelAlignment = ZplAlignmentHelper.GetZplAlignment(labelSettings.LabelTextAlignment);
+                int labelTextX = ZplAlignmentHelper.CalculateZplTextX(labelWidthDots, barcodeWidthDots, labelSettings.LabelTextAlignment);
                 
-                zpl.AppendLine($"^FO{barcodePosition.X},{currentTextY}");
+                zpl.AppendLine($"^FO{labelTextX},{currentTextY}");
                 zpl.AppendLine($"^A0N,{labelFontSize},{labelFontSize}");
-                zpl.AppendLine($"^FB{barcodeWidthDots},2,0,C,0");
+                zpl.AppendLine($"^FB{barcodeWidthDots},2,0,{labelAlignment},0");
                 zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Data)}^FS");
                 
                 currentTextY += (labelFontSize * 2) + 10; 
             }
 
-            // Description text below label text if provided - using DescriptionFontSize
             if (!string.IsNullOrWhiteSpace(barcodeData.Description))
             {
                 int descFontSize = ConvertFontSizeToZpl(labelSettings.DescriptionFontSize);
+                string descAlignment = ZplAlignmentHelper.GetZplAlignment(labelSettings.DescriptionTextAlignment);
+                int descTextX = ZplAlignmentHelper.CalculateZplTextX(labelWidthDots, barcodeWidthDots, labelSettings.DescriptionTextAlignment);
                 
-                zpl.AppendLine($"^FO{barcodePosition.X},{currentTextY}");
+                zpl.AppendLine($"^FO{descTextX},{currentTextY}");
                 zpl.AppendLine($"^A0N,{descFontSize},{descFontSize}");
-                zpl.AppendLine($"^FB{barcodeWidthDots},2,0,C,0");
+                zpl.AppendLine($"^FB{barcodeWidthDots},2,0,{descAlignment},0");
                 zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Description)}^FS");
             }
 
