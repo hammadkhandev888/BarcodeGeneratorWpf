@@ -47,44 +47,40 @@ namespace BarcodeGenerator.Helpers
                 zpl.AppendLine($"^PQ{barcodeData.Copies}");
             }
 
-            // Barcode field
-            zpl.AppendLine($"^FO{barcodePosition.X},{barcodePosition.Y}");
+            // Barcode field - centered using ^FB
+            int moduleWidth = 2;
             
-            // Calculate module width and ratio for barcode
-            int moduleWidth = Math.Max(2, barcodeWidthDots / (barcodeData.Value.Length * 11)); 
-            moduleWidth = Math.Min(moduleWidth, 10); 
-            
+            zpl.AppendLine($"^FO0,{barcodePosition.Y}");
             zpl.AppendLine($"^BY{moduleWidth},3,{barcodeHeightDots}");
+            zpl.AppendLine($"^FB{labelWidthDots},1,0,C,0");
             zpl.AppendLine($"^BCN,{barcodeHeightDots},N,N,N"); 
             zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Value)}^FS");
 
-            int currentTextY = textPosition.Y;
-            if (!string.IsNullOrWhiteSpace(barcodeData.Data))
-            {
-                int labelFontSize = ConvertFontSizeToZpl(labelSettings.LabelFontSize);
-                string labelAlignment = ZplAlignmentHelper.GetZplAlignment(labelSettings.LabelTextAlignment);
-                int labelTextX = ZplAlignmentHelper.CalculateZplTextX(labelWidthDots, barcodeWidthDots, labelSettings.LabelTextAlignment);
-                
-                zpl.AppendLine($"^FO{labelTextX},{currentTextY}");
-                zpl.AppendLine($"^A0N,{labelFontSize},{labelFontSize}");
-                zpl.AppendLine($"^FB{barcodeWidthDots},2,0,{labelAlignment},0");
-                zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Data)}^FS");
-                
-                currentTextY += (labelFontSize * 2) + 10; 
-            }
+           int currentTextY = textPosition.Y;
 
-            if (!string.IsNullOrWhiteSpace(barcodeData.Description))
-            {
-                int descFontSize = ConvertFontSizeToZpl(labelSettings.DescriptionFontSize);
-                string descAlignment = ZplAlignmentHelper.GetZplAlignment(labelSettings.DescriptionTextAlignment);
-                int descTextX = ZplAlignmentHelper.CalculateZplTextX(labelWidthDots, barcodeWidthDots, labelSettings.DescriptionTextAlignment);
-                
-                zpl.AppendLine($"^FO{descTextX},{currentTextY}");
-                zpl.AppendLine($"^A0N,{descFontSize},{descFontSize}");
-                zpl.AppendLine($"^FB{barcodeWidthDots},2,0,{descAlignment},0");
-                zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Description)}^FS");
-            }
+// Label text - centered to match barcode
+if (!string.IsNullOrWhiteSpace(barcodeData.Data))
+{
+    int labelFontSize = ConvertFontSizeToZpl(labelSettings.LabelFontSize);
+    
+    zpl.AppendLine($"^FO0,{currentTextY}");  // ✅ Start at left edge
+    zpl.AppendLine($"^A0N,{labelFontSize},{labelFontSize}");
+    zpl.AppendLine($"^FB{labelWidthDots},2,0,C,0");  // ✅ Full label width, centered
+    zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Data)}^FS");
+    
+    currentTextY += (labelFontSize * 2) + 10; 
+}
 
+// Description text - centered to match barcode
+if (!string.IsNullOrWhiteSpace(barcodeData.Description))
+{
+    int descFontSize = ConvertFontSizeToZpl(labelSettings.DescriptionFontSize);
+    
+    zpl.AppendLine($"^FO0,{currentTextY}");  // ✅ Start at left edge
+    zpl.AppendLine($"^A0N,{descFontSize},{descFontSize}");
+    zpl.AppendLine($"^FB{labelWidthDots},2,0,C,0");  // ✅ Full label width, centered
+    zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Description)}^FS");
+}
             // End format
             zpl.AppendLine("^XZ");
 
