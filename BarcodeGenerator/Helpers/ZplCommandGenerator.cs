@@ -58,6 +58,8 @@ namespace BarcodeGenerator.Helpers
 
             // Barcode field - positioned at calculated center
             // REMOVED ^FB - it doesn't work with barcodes!
+            if(moduleWidth==1)
+                moduleWidth=2;  
             zpl.AppendLine($"^FO{barcodePosition.X},{barcodePosition.Y}");
             zpl.AppendLine($"^BY{moduleWidth},3,{barcodeHeightDots}");
             zpl.AppendLine($"^BCN,{barcodeHeightDots},N,N,N");
