@@ -799,6 +799,7 @@ namespace BarcodeGenerator.ViewModels
                     await SaveCurrentSettingsAsync();
                     // Refresh recent barcodes to show updated print count
                     await LoadRecentBarcodesAsync();
+                ClearData();
                 }
             }
             catch (Exception ex)
@@ -808,7 +809,6 @@ namespace BarcodeGenerator.ViewModels
             finally
             {
                 IsPrinting = false;
-                ClearData();
             }
         }
 
