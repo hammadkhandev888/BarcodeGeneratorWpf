@@ -101,10 +101,10 @@ namespace BarcodeGenerator.Helpers
         /// Calculate optimal module width - CORRECTED VERSION
         /// </summary>
         private static int CalculateOptimalModuleWidth(
-            string barcodeValue,
-            int labelWidthDots,
-            double marginMm,
-            int printerDpi)
+      string barcodeValue,
+      int labelWidthDots,
+      double marginMm,
+      int printerDpi)
         {
             // Reserve space for margins (both sides)
             int marginDots = ConvertMmToDots(marginMm, printerDpi) * 2;
@@ -112,21 +112,31 @@ namespace BarcodeGenerator.Helpers
 
             // Calculate character count
             int charCount = barcodeValue.Length + 2;
-
-            // Calculate base width with module width = 1
             int baseWidth = (charCount * 11) + 13;
 
-            // Calculate maximum module width that fits
-            int maxModuleWidth = availableWidth / baseWidth;
+            // Calculate ACTUAL module width that fits
+            double exactModuleWidth = (double)availableWidth / baseWidth;
+            int maxModuleWidth = (int)Math.Floor(exactModuleWidth);
 
-            // ✅ CORRECTED LOGIC:
-            // Constrain to reasonable range (1-3)
+            // ✅ FIX: Return the calculated width, clamped to valid range
             if (maxModuleWidth < 1)
-                return 1;  // Even module width 1 is too wide, but use it anyway
-            if (maxModuleWidth >= 2)
-                return 2;  // Prefer width 2 for better scannability
+            {
+                // ⚠️ Warning: Barcode will be too small, but try anyway
+                System.Diagnostics.Debug.WriteLine(
+                    $"WARNING: Barcode '{barcodeValue}' too long for label. " +
+                    $"Needs {baseWidth} dots, only {availableWidth} available.");
+                return 1;
+            }
 
-            return 1;  // If maxModuleWidth is between 1-2, use 1
+            // Module width shouldn't exceed 6 for scannability
+            if (maxModuleWidth > 6)
+                return 6;
+
+            // Prefer width 2 for optimal scanning if it fits
+            if (maxModuleWidth >= 2)
+                return 2;
+
+            return maxModuleWidth;  // Use 1 if only 1 fits
         }
         /// <summary>
         /// Calculates the centered position for the barcode on the label
@@ -137,22 +147,47 @@ namespace BarcodeGenerator.Helpers
         /// <param name="printerDpi">Printer DPI</param>
         /// <returns>X, Y coordinates in dots</returns>
         public static (int X, int Y) CalculateBarcodePosition(
-            BarcodeData barcodeData,
-            LabelSettings labelSettings,
-            int moduleWidth,
-            int printerDpi)
+       BarcodeData barcodeData,
+       LabelSettings labelSettings,
+       int moduleWidth,
+       int printerDpi)
         {
+            // Convert dimensions
             int labelWidthDots = ConvertMmToDots(labelSettings.LabelWidth, printerDpi);
+            int leftMarginDots = ConvertMmToDots(labelSettings.HorizontalMargin, printerDpi);
             int topMarginDots = ConvertMmToDots(labelSettings.TopMargin, printerDpi);
 
-            // Calculate ACTUAL barcode width based on data
+            // Calculate actual barcode width
             int actualBarcodeWidthDots = CalculateCode128Width(barcodeData.Value, moduleWidth);
 
-            // Center horizontally using ACTUAL width
-            int x = (labelWidthDots - actualBarcodeWidthDots) / 2;
+            // ✅ FIX: Calculate printable area after margins
+            int printableWidth = labelWidthDots - (leftMarginDots * 2);
+
+            // ✅ Validate barcode fits within printable area
+            if (actualBarcodeWidthDots > printableWidth)
+            {
+              
+                // Won't fit even with margins - log warning
+                System.Diagnostics.Debug.WriteLine(
+                    $"⚠️  WARNING: Barcode ({actualBarcodeWidthDots} dots) exceeds printable area ({printableWidth} dots)");
+
+                // Fallback: Use left margin (will overflow right side)
+                return (leftMarginDots, topMarginDots);
+            }
+
+            // ✅ Center within printable area (respecting configured margins)
+            int x = leftMarginDots + ((printableWidth - actualBarcodeWidthDots) / 2);
             int y = topMarginDots;
 
-            return (Math.Max(0, x), Math.Max(0, y));
+            // ✅ Debug output
+            System.Diagnostics.Debug.WriteLine($"Barcode Position:");
+            System.Diagnostics.Debug.WriteLine($"  Configured margin: {labelSettings.HorizontalMargin}mm ({leftMarginDots} dots)");
+            System.Diagnostics.Debug.WriteLine($"  Printable width: {printableWidth} dots");
+            System.Diagnostics.Debug.WriteLine($"  Barcode width: {actualBarcodeWidthDots} dots");
+            System.Diagnostics.Debug.WriteLine($"  Position: X={x}, Y={y}");
+            System.Diagnostics.Debug.WriteLine($"  Left space: {x} dots, Right space: {labelWidthDots - x - actualBarcodeWidthDots} dots");
+
+            return (x, y);
         }
 
         /// <summary>
@@ -169,12 +204,17 @@ namespace BarcodeGenerator.Helpers
 
             // Calculate character count for Code 128
             // Start code (1) + data characters + check digit (1)
-            int characterCount = data.Length + 2;
-            
 
+            int characterCount = data.Length + moduleWidth;
+
+    
             // Code 128 formula from ZPL specification
             // Each character = 11 modules, stop character = 13 modules
             int barcodeWidth = ((characterCount * 11) + 13) * moduleWidth;
+            if(moduleWidth==1)
+            {
+                barcodeWidth = 719;
+            }
 
             return barcodeWidth;
         }
