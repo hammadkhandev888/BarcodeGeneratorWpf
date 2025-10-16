@@ -170,6 +170,7 @@ namespace BarcodeGenerator.Helpers
             // Calculate character count for Code 128
             // Start code (1) + data characters + check digit (1)
             int characterCount = data.Length + 2;
+            
 
             // Code 128 formula from ZPL specification
             // Each character = 11 modules, stop character = 13 modules

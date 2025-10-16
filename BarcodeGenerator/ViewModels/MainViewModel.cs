@@ -283,11 +283,6 @@ namespace BarcodeGenerator.ViewModels
 
                 RecentBarcodes.Insert(0, saved);
 
-                // Keep a reasonable limit (10)
-                while (RecentBarcodes.Count > 10)
-                    RecentBarcodes.RemoveAt(RecentBarcodes.Count - 1);
-
-                // Clear inputs as requested
                 ClearAllInputs();
 
                 StatusMessage = $"Saved: {saved.BarcodeText}";
@@ -384,16 +379,12 @@ namespace BarcodeGenerator.ViewModels
                     BarcodeHeight,
                     Comment);
 
-                // Update recent list
                 var existing = RecentBarcodes.FirstOrDefault(r => r.Id == saved.Id);
                 if (existing != null)
                     RecentBarcodes.Remove(existing);
 
                 RecentBarcodes.Insert(0, saved);
-                while (RecentBarcodes.Count > 10)
-                    RecentBarcodes.RemoveAt(RecentBarcodes.Count - 1);
 
-                // Clear inputs
                 ClearAllInputs();
 
                 StatusMessage = $"PDF saved and record saved: {saved.BarcodeText}";
@@ -812,27 +803,7 @@ namespace BarcodeGenerator.ViewModels
             }
         }
 
-        private async Task ExecuteTestPrintAsync()
-        {
-            if (string.IsNullOrEmpty(SelectedPrinter))
-            {
-                StatusMessage = "Please select a printer first";
-                return;
-            }
-
-            try
-            {
-                StatusMessage = "Sending test print...";
-                
-                var result = await _printerService.TestPrintAsync(SelectedPrinter);
-                StatusMessage = result.Success ? result.Message : $"Test print failed: {result.Message}";
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = $"Test print error: {ex.Message}";
-            }
-        }
-
+      
         #endregion
 
         #region Settings Management
@@ -941,16 +912,20 @@ namespace BarcodeGenerator.ViewModels
         {
             try
             {
-                var recentBarcodes = await _databaseService.GetRecentlyUsedBarcodesAsync(10);
+                var recentBarcodes = await _databaseService.GetRecentlyUsedBarcodesAsync();
                 RecentBarcodes.Clear();
                 foreach (var barcode in recentBarcodes)
                 {
                     RecentBarcodes.Add(barcode);
                 }
+                
+                System.Diagnostics.Debug.WriteLine($"Loaded {RecentBarcodes.Count} recent barcodes from database");
+                StatusMessage = $"Loaded {RecentBarcodes.Count} recent barcodes";
             }
             catch (Exception ex)
             {
                 StatusMessage = $"Failed to load recent barcodes: {ex.Message}";
+                System.Diagnostics.Debug.WriteLine($"Error loading recent barcodes: {ex}");
             }
         }
 

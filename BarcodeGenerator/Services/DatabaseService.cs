@@ -198,24 +198,22 @@ namespace BarcodeGenerator.Services
         /// <summary>
         /// Method 10: GetRecentlyUsedBarcodesAsync - Gets recently printed barcodes
         /// </summary>
-        public async Task<List<BarcodeRecord>> GetRecentlyUsedBarcodesAsync(int count = 20)
+        public async Task<List<BarcodeRecord>> GetRecentlyUsedBarcodesAsync()
         {
             return await _context.BarcodeRecords
-                .Where(r => r.IsActive && r.LastModifiedDate != null)
+                .Where(r => r.IsActive)
                 .OrderByDescending(r => r.CreatedDate)
-                .Take(count)
                 .ToListAsync();
         }
 
         /// <summary>
         /// Method 11: GetMostPrintedBarcodesAsync - Gets most frequently printed barcodes
         /// </summary>
-        public async Task<List<BarcodeRecord>> GetMostPrintedBarcodesAsync(int count = 10)
+        public async Task<List<BarcodeRecord>> GetMostPrintedBarcodesAsync()
         {
             return await _context.BarcodeRecords
                 .Where(r => r.IsActive && r.TotalPrintCount > 0)
                 .OrderByDescending(r => r.TotalPrintCount)
-                .Take(count)
                 .ToListAsync();
         }
 
