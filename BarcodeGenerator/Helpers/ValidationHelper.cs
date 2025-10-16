@@ -36,14 +36,16 @@ namespace BarcodeGenerator.Helpers
         /// <returns>Validation result with error message</returns>
         public static (bool IsValid, string ErrorMessage) ValidateLabelSize(double width, double height)
         {
-            const double minSize = 10.0;
-            const double maxSize = 300.0;
+            const double minWidth = 25.4;   // 1.0 inch - minimum media width
+            const double maxWidth = 112.0;  // Maximum media width (4.4 inches)
+            const double minHeight = 10.0;  // Reasonable minimum
+            const double maxHeight = 991.0; // Maximum label length for ZD220
 
-            if (width < minSize || width > maxSize)
-                return (false, $"Label width must be between {minSize}mm and {maxSize}mm");
+            if (width < minWidth || width > maxWidth)
+                return (false, $"Label width must be between {minWidth}mm and {maxWidth}mm");
 
-            if (height < minSize || height > maxSize)
-                return (false, $"Label height must be between {minSize}mm and {maxSize}mm");
+            if (height < minHeight || height > maxHeight)
+                return (false, $"Label height must be between {minHeight}mm and {maxHeight}mm");
 
             return (true, string.Empty);
         }
@@ -56,10 +58,10 @@ namespace BarcodeGenerator.Helpers
         /// <returns>Validation result with error message</returns>
         public static (bool IsValid, string ErrorMessage) ValidateBarcodeSize(double width, double height)
         {
-            const double minWidth = 5.0;
-            const double maxWidth = 250.0;
-            const double minHeight = 5.0;
-            const double maxHeight = 100.0;
+            const double minWidth = 20.0;   // Minimum for reliable scanning
+            const double maxWidth = 100.0;  // Safe maximum within printable area (104-112mm)
+            const double minHeight = 10.0;  // Minimum readable height
+            const double maxHeight = 50.0;  // Practical maximum for most applications
 
             if (width < minWidth || width > maxWidth)
                 return (false, $"Barcode width must be between {minWidth}mm and {maxWidth}mm");
@@ -237,19 +239,32 @@ namespace BarcodeGenerator.Helpers
         /// <param name="textHeight">Estimated text height in mm</param>
         /// <returns>Validation result</returns>
         public static (bool IsValid, string ErrorMessage) ValidateLayout(
-            double labelWidth, double labelHeight,
-            double barcodeWidth, double barcodeHeight,
-            (double Horizontal, double Vertical) margins,
-            double textHeight = 5.0)
+       double labelWidth, double labelHeight,
+       double barcodeWidth, double barcodeHeight,
+       (double Horizontal, double Vertical) margins,
+       double textHeight = 5.0,
+       double spacing = 2.0)  // Space between barcode and text
         {
-            // Check horizontal fit
-            if (barcodeWidth + margins.Horizontal > labelWidth)
-                return (false, "Barcode is too wide for the label");
+            // Validate margins are positive
+            if (margins.Horizontal < 0 || margins.Vertical < 0)
+                return (false, "Margins cannot be negative");
 
-            // Check vertical fit (barcode + text + margins)
-            double requiredHeight = barcodeHeight + textHeight + margins.Vertical;
+            // Check horizontal fit (margins apply to BOTH sides)
+            double requiredWidth = barcodeWidth + (margins.Horizontal * 2);
+            if (requiredWidth > labelWidth)
+                return (false, $"Barcode ({barcodeWidth}mm) + margins ({margins.Horizontal * 2}mm) = {requiredWidth}mm exceeds label width ({labelWidth}mm)");
+
+            // Check vertical fit (margins apply to TOP and BOTTOM)
+            double requiredHeight = barcodeHeight + textHeight + spacing + (margins.Vertical * 2);
             if (requiredHeight > labelHeight)
-                return (false, "Content is too tall for the label");
+                return (false, $"Content ({barcodeHeight + textHeight + spacing}mm) + margins ({margins.Vertical * 2}mm) = {requiredHeight}mm exceeds label height ({labelHeight}mm)");
+
+            // Validate minimum spacing exists
+            double horizontalSpace = labelWidth - barcodeWidth - (margins.Horizontal * 2);
+            double verticalSpace = labelHeight - barcodeHeight - textHeight - spacing - (margins.Vertical * 2);
+
+            if (horizontalSpace < 0 || verticalSpace < 0)
+                return (false, "Insufficient space for content with specified margins");
 
             return (true, string.Empty);
         }

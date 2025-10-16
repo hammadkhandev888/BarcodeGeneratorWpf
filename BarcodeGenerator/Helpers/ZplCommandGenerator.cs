@@ -14,6 +14,7 @@ namespace BarcodeGenerator.Helpers
         /// <param name="labelSettings">Label dimensions and formatting</param>
         /// <param name="printerDpi">Printer DPI (default 203 for Zebra ZD220)</param>
         /// <returns>Complete ZPL command string</returns>
+
         public static string GenerateLabelZpl(BarcodeData barcodeData, LabelSettings labelSettings, int printerDpi = 203)
         {
             if (barcodeData == null)
@@ -24,11 +25,13 @@ namespace BarcodeGenerator.Helpers
             // Convert dimensions from mm to dots
             int labelWidthDots = ConvertMmToDots(labelSettings.LabelWidth, printerDpi);
             int labelHeightDots = ConvertMmToDots(labelSettings.LabelHeight, printerDpi);
-            int barcodeWidthDots = ConvertMmToDots(labelSettings.BarcodeWidth, printerDpi);
             int barcodeHeightDots = ConvertMmToDots(labelSettings.BarcodeHeight, printerDpi);
 
-            // Calculate positions
-            var barcodePosition = CalculateBarcodePosition(labelSettings, printerDpi);
+            // Module width for barcode
+            int moduleWidth = 2;
+
+            // Calculate positions with CORRECTED method
+            var barcodePosition = CalculateBarcodePosition(barcodeData, labelSettings, moduleWidth, printerDpi);
             var textPosition = CalculateTextPosition(labelSettings, barcodeHeightDots, printerDpi);
 
             // Build ZPL command
@@ -47,46 +50,93 @@ namespace BarcodeGenerator.Helpers
                 zpl.AppendLine($"^PQ{barcodeData.Copies}");
             }
 
-            // Barcode field - centered using ^FB
-            int moduleWidth = 2;
-            
-            zpl.AppendLine($"^FO0,{barcodePosition.Y}");
+            // Barcode field - positioned at calculated center
+            // REMOVED ^FB - it doesn't work with barcodes!
+            zpl.AppendLine($"^FO{barcodePosition.X},{barcodePosition.Y}");
             zpl.AppendLine($"^BY{moduleWidth},3,{barcodeHeightDots}");
-            zpl.AppendLine($"^FB{labelWidthDots},1,0,C,0");
-            zpl.AppendLine($"^BCN,{barcodeHeightDots},N,N,N"); 
+            zpl.AppendLine($"^BCN,{barcodeHeightDots},N,N,N");
             zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Value)}^FS");
 
-           int currentTextY = textPosition.Y;
+            int currentTextY = textPosition.Y;
 
-// Label text - centered to match barcode
-if (!string.IsNullOrWhiteSpace(barcodeData.Data))
-{
-    int labelFontSize = ConvertFontSizeToZpl(labelSettings.LabelFontSize);
-    
-    zpl.AppendLine($"^FO0,{currentTextY}");  // ✅ Start at left edge
-    zpl.AppendLine($"^A0N,{labelFontSize},{labelFontSize}");
-    zpl.AppendLine($"^FB{labelWidthDots},2,0,C,0");  // ✅ Full label width, centered
-    zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Data)}^FS");
-    
-    currentTextY += (labelFontSize * 2) + 10; 
-}
+            // Label text - centered using field block
+            if (!string.IsNullOrWhiteSpace(barcodeData.Data))
+            {
+                int labelFontSize = ConvertFontSizeToZpl(labelSettings.LabelFontSize);
 
-// Description text - centered to match barcode
-if (!string.IsNullOrWhiteSpace(barcodeData.Description))
-{
-    int descFontSize = ConvertFontSizeToZpl(labelSettings.DescriptionFontSize);
-    
-    zpl.AppendLine($"^FO0,{currentTextY}");  // ✅ Start at left edge
-    zpl.AppendLine($"^A0N,{descFontSize},{descFontSize}");
-    zpl.AppendLine($"^FB{labelWidthDots},2,0,C,0");  // ✅ Full label width, centered
-    zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Description)}^FS");
-}
+                zpl.AppendLine($"^FO0,{currentTextY}");
+                zpl.AppendLine($"^A0N,{labelFontSize},{labelFontSize}");
+                zpl.AppendLine($"^FB{labelWidthDots},2,0,C,0");
+                zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Data)}^FS");
+
+                currentTextY += (labelFontSize * 2) + 10;
+            }
+
+            // Description text - centered using field block
+            if (!string.IsNullOrWhiteSpace(barcodeData.Description))
+            {
+                int descFontSize = ConvertFontSizeToZpl(labelSettings.DescriptionFontSize);
+
+                zpl.AppendLine($"^FO0,{currentTextY}");
+                zpl.AppendLine($"^A0N,{descFontSize},{descFontSize}");
+                zpl.AppendLine($"^FB{labelWidthDots},2,0,C,0");
+                zpl.AppendLine($"^FD{EscapeZplData(barcodeData.Description)}^FS");
+            }
+
             // End format
             zpl.AppendLine("^XZ");
 
             return zpl.ToString();
         }
+        /// <summary>
+        /// Calculates the centered position for the barcode on the label
+        /// </summary>
+        /// <param name="barcodeData">Barcode data (needed to calculate actual width)</param>
+        /// <param name="labelSettings">Label settings</param>
+        /// <param name="moduleWidth">Narrow bar width (typically 2)</param>
+        /// <param name="printerDpi">Printer DPI</param>
+        /// <returns>X, Y coordinates in dots</returns>
+        public static (int X, int Y) CalculateBarcodePosition(
+            BarcodeData barcodeData,
+            LabelSettings labelSettings,
+            int moduleWidth,
+            int printerDpi)
+        {
+            int labelWidthDots = ConvertMmToDots(labelSettings.LabelWidth, printerDpi);
+            int topMarginDots = ConvertMmToDots(labelSettings.TopMargin, printerDpi);
 
+            // Calculate ACTUAL barcode width based on data
+            int actualBarcodeWidthDots = CalculateCode128Width(barcodeData.Value, moduleWidth);
+
+            // Center horizontally using ACTUAL width
+            int x = (labelWidthDots - actualBarcodeWidthDots) / 2;
+            int y = topMarginDots;
+
+            return (Math.Max(0, x), Math.Max(0, y));
+        }
+
+        /// <summary>
+        /// Calculates the actual rendered width of a Code 128 barcode
+        /// Formula: ((character_count * 11) + 13) * module_width
+        /// </summary>
+        /// <param name="data">Barcode data string</param>
+        /// <param name="moduleWidth">Narrow bar width in dots</param>
+        /// <returns>Barcode width in dots</returns>
+        private static int CalculateCode128Width(string data, int moduleWidth)
+        {
+            if (string.IsNullOrEmpty(data))
+                return 0;
+
+            // Calculate character count for Code 128
+            // Start code (1) + data characters + check digit (1)
+            int characterCount = data.Length + 2;
+
+            // Code 128 formula from ZPL specification
+            // Each character = 11 modules, stop character = 13 modules
+            int barcodeWidth = ((characterCount * 11) + 13) * moduleWidth;
+
+            return barcodeWidth;
+        }
         /// <summary>
         /// Generates ZPL command for multiple labels with different data
         /// </summary>
