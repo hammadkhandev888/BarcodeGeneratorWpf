@@ -808,6 +808,7 @@ namespace BarcodeGenerator.ViewModels
             finally
             {
                 IsPrinting = false;
+                ClearData();
             }
         }
 
