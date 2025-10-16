@@ -27,8 +27,14 @@ namespace BarcodeGenerator.Helpers
             int labelHeightDots = ConvertMmToDots(labelSettings.LabelHeight, printerDpi);
             int barcodeHeightDots = ConvertMmToDots(labelSettings.BarcodeHeight, printerDpi);
 
-            // Module width for barcode
-            int moduleWidth = 2;
+        
+
+            // TO THIS:
+            int moduleWidth = CalculateOptimalModuleWidth(
+                barcodeData.Value,
+                labelWidthDots,
+                labelSettings.HorizontalMargin,
+                printerDpi);
 
             // Calculate positions with CORRECTED method
             var barcodePosition = CalculateBarcodePosition(barcodeData, labelSettings, moduleWidth, printerDpi);
@@ -88,6 +94,40 @@ namespace BarcodeGenerator.Helpers
 
             return zpl.ToString();
         }
+
+       
+
+        /// <summary>
+        /// Calculate optimal module width to fit barcode on label
+        /// </summary>
+        private static int CalculateOptimalModuleWidth(
+            string barcodeValue,
+            int labelWidthDots,
+            double marginMm,
+            int printerDpi)
+        {
+            // Reserve space for margins (both sides)
+            int marginDots = ConvertMmToDots(marginMm, printerDpi) * 2;
+            int availableWidth = labelWidthDots - marginDots;
+
+            // Calculate character count
+            int charCount = barcodeValue.Length + 2;
+
+            // Calculate base width with module width = 1
+            int baseWidth = (charCount * 11) + 13;
+
+            // Calculate maximum module width that fits
+            int maxModuleWidth = availableWidth / baseWidth;
+
+            // Constrain to reasonable range
+            if (maxModuleWidth < 2)
+                return 2;  // Minimum for scannability
+            if (maxModuleWidth > 3)
+                return 3;  // Don't make it too wide
+
+            return maxModuleWidth;
+        }
+
         /// <summary>
         /// Calculates the centered position for the barcode on the label
         /// </summary>
