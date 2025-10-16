@@ -95,10 +95,10 @@ namespace BarcodeGenerator.Helpers
             return zpl.ToString();
         }
 
-       
+
 
         /// <summary>
-        /// Calculate optimal module width to fit barcode on label
+        /// Calculate optimal module width - CORRECTED VERSION
         /// </summary>
         private static int CalculateOptimalModuleWidth(
             string barcodeValue,
@@ -119,15 +119,15 @@ namespace BarcodeGenerator.Helpers
             // Calculate maximum module width that fits
             int maxModuleWidth = availableWidth / baseWidth;
 
-            // Constrain to reasonable range
-            if (maxModuleWidth < 2)
-                return 2;  // Minimum for scannability
-            if (maxModuleWidth > 3)
-                return 3;  // Don't make it too wide
+            // ✅ CORRECTED LOGIC:
+            // Constrain to reasonable range (1-3)
+            if (maxModuleWidth < 1)
+                return 1;  // Even module width 1 is too wide, but use it anyway
+            if (maxModuleWidth >= 2)
+                return 2;  // Prefer width 2 for better scannability
 
-            return maxModuleWidth;
+            return 1;  // If maxModuleWidth is between 1-2, use 1
         }
-
         /// <summary>
         /// Calculates the centered position for the barcode on the label
         /// </summary>
